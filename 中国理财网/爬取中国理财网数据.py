@@ -81,8 +81,11 @@ if __name__ == '__main__':
         # 记录成功日志
         mark_success_log(count, getLocalDate(), generated_log_id, cursor)
     except Exception as e:
+        print(e)
         # 记录失败日志
-        mark_failure_log(e, getLocalDate(), generated_log_id, cursor)
+        if cursor:
+            cursor.connection.rollback()
+            mark_failure_log(e, getLocalDate(), generated_log_id, cursor)
     finally:
         # 释放资源
         close([cursor, conn, session])
