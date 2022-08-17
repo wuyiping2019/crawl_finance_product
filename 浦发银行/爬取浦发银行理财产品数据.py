@@ -7,7 +7,6 @@ from utils.global_config import DB_ENV
 import requests
 
 URL = r'https://per.spdb.com.cn/was5/web/search'
-METHOD = 'POST'
 NAME = '浦发银行'
 TARGET_TABLE = 'ip_bank_spdb_personal'
 if DB_ENV == 'ORACLE':
@@ -55,8 +54,6 @@ def process_details(sess, cur, log_id, types):
     :return:
     """
     for type in types:
-        if type['type'] == '现金管理类':
-            pass
         typeName = type['type']
         searchword = type['searchword']
         data = {
