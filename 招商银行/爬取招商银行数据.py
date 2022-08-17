@@ -41,7 +41,7 @@ if __name__ == '__main__':
             product['logId'] = generated_log_id
             # product是一个字典，本身含有一个Id属性，对这个属性重命名
             product['innerId'] = product.pop('Id')
-            product = {k: escape_string(str(v.replace('\'', '')) if v else '') for k, v in product.items()}
+            product = {k: escape_string(str(v).replace('\'', '') if v else '') for k, v in product.items()}
             insertLogToDB(cursor, product, TABLE_NAME)
         # 提交事务
         cursor.connection.commit()
