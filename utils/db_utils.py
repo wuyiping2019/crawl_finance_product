@@ -4,6 +4,7 @@ from global_config import mysql_database, mysql_password, mysql_user, mysql_auto
 from global_config import oracle_user, oracle_password, oracle_uri
 import cx_Oracle as cx
 
+
 def createInsertSql(properties: dict):
     """
         Return
@@ -37,6 +38,12 @@ def get_conn_oracle():
     return cx.connect(oracle_user, oracle_password, oracle_uri)
 
 
+def close(objs: list):
+    for obj in objs:
+        if obj:
+            obj.close()
+
+
 __all__ = [
-    "get_conn_mysql", "get_conn_oracle","createInsertSql"
+    "get_conn_mysql", "get_conn_oracle", "createInsertSql", "close"
 ]

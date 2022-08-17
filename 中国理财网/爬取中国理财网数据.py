@@ -3,11 +3,12 @@ import json
 import requests
 from pymysql.cursors import Cursor
 from utils.global_config import LOG_TABLE, init_oracle, DB_ENV
-from utils.db_utils import createInsertSql, get_conn_oracle
-from utils.mark_log import insertLogToDB,updateLogToDB
+from utils.db_utils import createInsertSql, get_conn_oracle, close
+from utils.mark_log import mark_start_log, mark_success_log, mark_failure_log, get_generated_log_id, get_write_count
 
 NAME = '中国理财网站'
 ZGLCW_BANK_TABLE = 'ip_zglcw_bank'
+REQUEST_URL = r'https://www.chinawealth.com.cn/dmmsQuery.go'
 # 初始化连接oracle本地客户端
 if DB_ENV == 'ORACLE':
     init_oracle()
@@ -59,22 +60,15 @@ if __name__ == '__main__':
         conn = get_conn_oracle()
         cursor = conn.cursor()
         # 记录开始日志
-        start_log = {
-            "name": NAME,
-            "startDate": getLocalDate(),
-            "status": "正在执行中"
-        }
-        insertLogToDB(cur=cursor, properties=start_log)
-
+        mark_start_log(NAME, getLocalDate(), cursor)
         # 查询的这条日志信息的自增主键id
-        cursor.execute("select max(id) from %s where name = '%s'" % (LOG_TABLE, NAME))
-        generated_log_id = cursor.fetchone()[0]
+        generated_log_id = get_generated_log_id(LOG_TABLE, NAME, cursor)
         # 获取银行信息 写入zglcw_bank表
         session = requests.session()
         data = {
             'code': 0
         }
-        resp = session.post('https://www.chinawealth.com.cn/dmmsQuery.go', data=data, headers=headers).text
+        resp = session.post(REQUEST_URL, data=data, headers=headers).text
         json_obj = json.loads(resp)
         for item in json_obj:
             # 添加
@@ -82,34 +76,13 @@ if __name__ == '__main__':
             writeDataToDB(cur=cursor, properties=item)
         # 统一提交事务
         conn.commit()
+        # 查询插入的数据条数
+        count = get_write_count(ZGLCW_BANK_TABLE, generated_log_id, cursor)
         # 记录成功日志
-        cursor.execute("select count(1) as count from %s where logId=%s" % (ZGLCW_BANK_TABLE, generated_log_id))
-        count = cursor.fetchone()[0]
-        success_log = {
-            "status": "完成",
-            "endDate": getLocalDate(),
-            "count": count,
-            "result": "成功",
-            "detail": "成功"
-        }
-        updateLogToDB(cur=cursor, log_id=generated_log_id, properties=success_log)
-        conn.commit()
-    # 记录成功日志
+        mark_success_log(count, getLocalDate(), generated_log_id, cursor)
     except Exception as e:
-        log_info = {
-            "status": "完成",
-            "endDate": getLocalDate(),
-            "count": 0,
-            "result": "失败",
-            "detail": str(e)
-        }
-        if not generated_log_id:
-            updateLogToDB(cur=cursor, log_id=generated_log_id, properties=log_info)
-            conn.commit()
+        # 记录失败日志
+        mark_failure_log(e, getLocalDate(), generated_log_id, cursor)
     finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
-        if session:
-            session.close()
+        # 释放资源
+        close([cursor, conn, session])
