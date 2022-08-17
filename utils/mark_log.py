@@ -40,7 +40,6 @@ def insertLogToDB(cur: Cursor, properties: dict, log_table=LOG_TABLE):
     properties['createTime'] = local_date
     fields, values = createInsertSql(properties)
     insert_sql = """insert into %s(%s) values(%s)""" % (log_table, fields, values)
-    print(insert_sql)
     cur.execute(insert_sql)
 
 

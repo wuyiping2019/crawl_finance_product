@@ -33,6 +33,8 @@ end;
 insert into spider_log(name) values ('ceshi');
 select * from spider_log;
 */
-select * from spider_log;
+select * from spider_log order by id desc;
+select * from IP_BANK_SPDB_PERSONAL a where a.LOGID = 34;
+truncate table IP_BANK_SPDB_PERSONAL;
 truncate table spider_log;
 insert into spider_log(name,startDate,status,createTime) values('中国理财网站','2022-08-17 13:07:02','正在执行中','2022-08-17 13:07:06');
