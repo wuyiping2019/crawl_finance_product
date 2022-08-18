@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SqlDialectMappings">
+    <file url="file://$PROJECT_DIR$/tables/ip_bank_cmb_personal.sql" dialect="Oracle" />
+    <file url="file://$PROJECT_DIR$/tables/ip_bank_spdb_personal.sql" dialect="Oracle" />
+    <file url="file://$PROJECT_DIR$/tables/ip_zglcw_bank.sql" dialect="Oracle" />
+    <file url="file://$PROJECT_DIR$/tables/spider_log.sql" dialect="Oracle" />
+    <file url="file://$PROJECT_DIR$/tables/中信银行.sql" dialect="Oracle" />
+  </component>
+</project>
