@@ -51,5 +51,5 @@ truncate table ip_bank_spdb_personal;
 
 insert into ip_bank_spdb_personal(docpuburl)
 values ('ceshi');
-select *
-from ip_bank_spdb_personal;
+select * from ip_bank_spdb_personal;
+truncate table ip_bank_spdb_personal

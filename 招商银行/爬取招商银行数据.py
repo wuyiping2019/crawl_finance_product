@@ -59,3 +59,5 @@ if __name__ == '__main__':
             mark_failure_log(e, getLocalDate(), generated_log_id, cursor)
     finally:
         close([driver, cursor, conn])
+        if driver:
+            driver.quit()

@@ -113,8 +113,10 @@ if __name__ == '__main__':
         mark_success_log(count, getLocalDate(), generated_log_id, cursor)
     except Exception as e:
         print(e)
+        # 回滚事务
         if cursor:
             cursor.connection.rollback()
+        # 记录失败日志
         if generated_log_id:
             mark_failure_log(e, getLocalDate(), generated_log_id, cursor)
     finally:
