@@ -19,9 +19,9 @@ HEADERS = {
 
 TYPES = [
     {
-        'type': '理财产品（自营',
+        'type': '理财产品（自营）',
         'url': 'http://www.cebbank.com/eportal/ui?moduleId=12073&struts.portlet.action=/app/qqdFrontAction!listProduct.action',
-        'method': 'get',
+        'method': 'post',
         'requestParams': {
             'proName': '',
             'bankProCode': '',
@@ -33,34 +33,136 @@ TYPES = [
 
     },
     {
-        'type': '理财产品（代销商业银行理财子公司产品'
+        'type': '理财产品（代销商业银行理财子公司产品',
+        'url': 'http://www.cebbank.com/eportal/ui?moduleId=12073&struts.portlet.action=/app/qqdFrontAction!listProduct.action',
+        'method': 'post',
+        'requestParams': {
+            'proName': '',
+            'bankProCode': '',
+            'valid': '',
+            'pfcatCode': 'SNOTE',
+            'page': '1',
+            'self_support': '1'
+        }
     },
     {
-        'type': '基金（代销）'
+        'type': '基金（代销）',
+        'url': 'http://www.cebbank.com/eportal/ui?moduleId=12073&struts.portlet.action=/app/qqdFrontAction!listProduct.action',
+        'method': 'post',
+        # 表单数据
+        'requestParams': {
+            'proName': '',
+            'bankProCode': '',
+            'valid': '',
+            'pfcatCode': 'FUND',
+            'page': '1',
+            'self_support': ''
+        }
     },
     {
-        'type': '集合资产管理计划（代销）'
+        'type': '集合资产管理计划（代销）',
+        'url': 'http://www.cebbank.com/eportal/ui?moduleId=12073&struts.portlet.action=/app/qqdFrontAction!listProduct.action',
+        'method': 'post',
+        # 表单数据
+        'requestParams': {
+            'proName': '',
+            'bankProCode': '',
+            'valid': '',
+            'pfcatCode': 'BROKE',
+            'page': '1',
+            'self_support': ''
+        }
     },
     {
-        'type': '保险（代销）'
+        'type': '保险（代销）',
+        'url': 'http://www.cebbank.com/eportal/ui?moduleId=12073&struts.portlet.action=/app/qqdFrontAction!listProduct.action',
+        'method': 'post',
+        # 表单数据
+        'requestParams': {
+            'proName': '',
+            'bankProCode': '',
+            'valid': '',
+            'pfcatCode': 'INS',
+            'page': '1',
+            'self_support': ''
+        }
     },
     {
-        'type': '信托（代销）'
+        'type': '信托（代销）',
+        'url': 'http://www.cebbank.com/eportal/ui?moduleId=12073&struts.portlet.action=/app/qqdFrontAction!listProduct.action',
+        'method': 'post',
+        # 表单数据
+        'requestParams': {
+            'proName': '',
+            'bankProCode': '',
+            'valid': '',
+            'pfcatCode': 'TRUST',
+            'page': '1',
+            'self_support': ''
+        }
     },
     {
-        'type': '国债（代销）'
+        'type': '国债（代销）',
+        'url': 'http://www.cebbank.com/eportal/ui?moduleId=12073&struts.portlet.action=/app/qqdFrontAction!listProduct.action',
+        'method': 'post',
+        # 表单数据
+        'requestParams': {
+            'proName': '',
+            'bankProCode': '',
+            'valid': '',
+            'pfcatCode': 'BOND',
+            'page': '1',
+            'self_support': ''
+        }
     },
     {
-        'type': '贵金属（自营）'
+        'type': '贵金属（自营）',
+        'url': 'http://www.cebbank.com/eportal/ui?moduleId=12073&struts.portlet.action=/app/qqdFrontAction!listProduct.action',
+        'method': 'post',
+        # 表单数据
+        'requestParams': {
+            'proName': '',
+            'bankProCode': '',
+            'valid': '',
+            'pfcatCode': 'GOLDFX',
+            'page': '1',
+            'self_support': ''
+        }
     },
     {
-        'type': '贵金属（代销）'
+        'type': '贵金属（代销）',
+        'url': 'http://www.cebbank.com/eportal/ui?moduleId=12073&struts.portlet.action=/app/qqdFrontAction!listProduct.action',
+        'method': 'post',
+        # 表单数据
+        'requestParams': {
+            'proName': '',
+            'bankProCode': '',
+            'valid': '',
+            'pfcatCode': 'GOLDFX',
+            'page': '1',
+            'self_support': '1'
+        }
     },
     {
-        'type': '开放银行（代销）'
+        'type': '开放银行（代销）',
+        'url': 'http://www.cebbank.com/eportal/ui?moduleId=12073&struts.portlet.action=/app/qqdFrontAction!showType.action&pfcatCode=SBANK',
+        'method': 'get',
+        # 表单数据
+        'requestParams': {
+        }
     },
     {
-        'type': '存款（自营）'
+        'type': '存款（自营）',
+        'url': 'http://www.cebbank.com/eportal/ui?moduleId=12073&struts.portlet.action=/app/qqdFrontAction!listProduct.action',
+        'method': 'post',
+        'requestParams': {
+            'proName': '',
+            'bankProCode': '',
+            'valid': '',
+            'pfcatCode': 'SAVING',
+            'page': '1',
+            'self_support': ''
+        }
     }
 ]
 
@@ -75,16 +177,16 @@ def process_spider_detail(conn, cursor, session: Session, log_id: int, **kwargs)
     :param kwargs: 额外需要的参数 手动传入
     :return:
     """
-    for type in TYPES:
-        type_name = type['type']
+    for type in [TYPES[0]]:
+        type_name = type['type']  # 爬取的数据中含有
         request_url = type['url']
         request_method = type['method']
         request_params = type['requestParams']
-        resp = session.request(method=request_method, url=request_url, params=request_params, headers=HEADERS).text
+        resp = session.request(method=request_method, url=request_url, data=request_params, headers=HEADERS).text
         # 获取总页数
         total_page = get_total_page(resp)
         # 循环处理每页数据
-        loop_pages(total_page, session, cursor, log_id, request_url, request_method, request_params)
+        loop_pages(total_page, session, cursor, log_id, request_url, request_method, request_params, type_name)
         break
 
 
@@ -93,9 +195,11 @@ def process_one_page(session: Session,
                      log_id: int,
                      request_url: str,
                      request_method: str,
-                     request_params: dict):
+                     request_params: dict,
+                     type: str):
     """
     处理爬取的一页数据并写入数据库
+    :param type:
     :param session:
     :param cur:
     :param log_id: 日志id
@@ -106,7 +210,7 @@ def process_one_page(session: Session,
     :return:
     """
     resp = session.request(method=request_method, url=request_url, params=request_params, headers=HEADERS).text
-    rows = parse_table(resp)
+    rows = parse_table(resp, type)
     for row in rows:
         row['logId'] = log_id
         insertLogToDB(cur, row, TAGET_TABLE)
@@ -118,9 +222,11 @@ def loop_pages(total_pages: int,
                log_id: int,
                request_url: str,
                request_method: str,
-               request_params: dict):
+               request_params: dict,
+               type: str):
     """
     按总页数 循环读取各页数据并处理每一页的数据
+    :param type:
     :param cur:
     :param session:
     :param log_id:
@@ -132,7 +238,7 @@ def loop_pages(total_pages: int,
     """
     for page in range(1, total_pages + 1, 1):
         request_params['page'] = str(page)
-        process_one_page(session, cur, log_id, request_url, request_method, request_params)
+        process_one_page(session, cur, log_id, request_url, request_method, request_params, type)
 
 
 def get_total_page(table_str):
@@ -145,9 +251,23 @@ def get_total_page(table_str):
     return int(soup.select('#totalPage')[0].get('value').strip())
 
 
-def parse_table(table_str):
+def get_row(props: list, tds: list):
+    """
+    爬取的数据是一个table表格
+    :param props: 列名
+    :param tds: table中一行数据（获取table的一个td标签）
+    :return:
+    """
+    row = {}
+    for index, prop in enumerate(props):
+        row[prop] = tds[index].text.strip()
+    return row
+
+
+def parse_table(table_str, type: str):
     """
     解析页面的产品 返回一个产品列表
+    :param type:
     :param table_str:
     :return:
     """
@@ -156,19 +276,38 @@ def parse_table(table_str):
     rows = []
     for tr in trs[1:]:
         tds = tr.select('td')
-        row = {
-            'type': tds[0].text.strip(),
-            'prdName': tds[1].text.strip(),
-            'prdCode': tds[2].text.strip(),
-            'prdProp': tds[3].text.strip(),
-            'risk': tds[4].text.strip(),
-            'detailType': tds[5].text.strip(),
-            'issuer': tds[6].text.strip(),
-            'onSale': tds[7].text.strip(),
-            'prdDuration': tds[8].text.strip(),
-            'openRule': tds[9].text.strip(),
-            'minAmount': tds[10].text.strip()
-        }
+        row = None
+        if type in ['理财产品（自营）', '理财产品（代销商业银行理财子公司产品）']:
+            row = get_row(
+                ['type', 'prdName', 'prdCode', 'prdProp', 'risk', 'detailType', 'issuer', 'onSale', 'prdDuration',
+                 'openRule', 'minAmount'], tds)
+        elif type == '基金（代销）':
+            row = get_row(
+                ['type', 'prdName', 'prdCode', 'prdProp', 'risk', 'detailType',
+                 'saleRegion', 'issuer', 'onSale',
+                 'openCloseDuration', 'prdDuration', 'minAmount'], tds)
+        elif type == '集合资产管理计划（代销）':
+            row = get_row(
+                ['type', 'prdName', 'prdCode', 'prdProp', 'risk', 'saleRegion', 'issuer', 'onSale', 'openCloseDuration',
+                 'prdDuration', 'minAmount'], tds)
+        elif type == '保险（代销）':
+            row = get_row(['type', 'prdName', 'prdCode', 'risk', 'saleRegion', 'issuer', 'onSale'], tds)
+        elif type == '信托（代销）':
+            row = get_row(
+                ['type', 'prdName', 'prdCode', 'prdProp', 'risk', 'saleRegion', 'issuer', 'onSale', 'openCloseDuration',
+                 'prdDuration', 'minAmount'], tds)
+        elif type == ['国债（代销）', '存款（自营）']:
+            row = get_row(['type', 'prdName', 'prdCode', 'risk', 'saleRegion', 'issuer', 'onSale', 'openCloseDuration',
+                           'prdDuration', 'minAmount'], tds)
+        elif type == '贵金属（自营）':
+            row = get_row(['type', 'prdName', 'prdCode', 'risk', 'saleRegion',
+                           'issuer', 'onSale', 'openCloseDuration', 'minAmount'], tds)
+        elif type == '开放银行（代销）':
+            row = get_row(['prdName', 'risk', 'saleRegion', 'issuer', 'onSale'], tds)
+            row['type'] = type
+        elif type == '开放银行（代销）':
+            row = get_row(['type', 'prdName', 'prdCode', 'risk', 'saleRegion', 'issuer', 'onSale', 'openCloseDuration',
+                           'prdDuration', 'minAmount'], tds)
         rows.append(row)
     return rows
 

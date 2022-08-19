@@ -10,9 +10,11 @@ create table ip_bank_ceb_personal(
     detailType varchar2(1000),
     issuer varchar2(1000),
     onSale varchar2(1000),
+    openCloseDuration varchar2(1000),
     prdDuration varchar2(1000),
     openRule varchar2(1000),
     minAmount varchar2(1000),
+    saleRegion varchar2(1000),
     type varchar2(1000),
     createTime varchar2(1000)
 );
@@ -32,5 +34,7 @@ begin
     select seq_ceb.nextval into :new.id from dual;
 end;
 
-select * from ip_bank_ceb_personal;
+select count(1) from ip_bank_ceb_personal;
+select count(1) from ip_bank_ceb_personal;
+select * from SPIDER_LOG order by id desc;
 
