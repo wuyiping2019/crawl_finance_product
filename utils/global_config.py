@@ -1,4 +1,4 @@
-ORACLE_CLIENT = r'D:\servers\instantclient_21_6'
+ORACLE_CLIENT = r'D:\instantclient_21_6'
 LOG_TABLE = 'spider_log'
 DB_ENV = 'ORACLE'
 

@@ -5,7 +5,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
 
 
-def get_driver(options=None, driver_path=r'D:\servers\chromedriver_win32_83\chromedriver.exe'):
+def get_driver(options=None, driver_path=r'D:\HKLife\HKKBWorkSpace\chromedriver.exe'):
     service = Service(driver_path)
     driver = webdriver.Chrome(service=service, options=options)
     return driver
