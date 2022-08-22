@@ -1,12 +1,10 @@
-import requests
-from bs4 import BeautifulSoup
-from requests import Session
-
-from utils.db_utils import close, get_conn_oracle
-from utils.mark_log import mark_failure_log, getLocalDate, insertLogToDB
-from utils.spider_flow import process_flow
 import json
 import math
+
+from requests import Session
+
+from utils.mark_log import insertLogToDB
+from utils.spider_flow import process_flow
 
 TAGET_TABLE = 'ip_bank_abc_personal'
 LOG_NAME = '中国农业银行'
@@ -14,21 +12,20 @@ LOG_NAME = '中国农业银行'
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36',
     'X-Requested-With': 'XMLHttpRequest',
-    'Referer': 'http://ewealth.abchina.com/fs/filter/default_9148.htm',
+    'Referer': 'http://ewealth.abchina.com/fs/filter/',
     'Host': 'ewealth.abchina.com',
     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
 }
 
 TYPES = [
     {
-        'type': '理财产品',
         'url': 'https://ewealth.abchina.com/app/data/api/DataService/BoeProductV2',
         'method': 'get',
         'requestParams': {
-            "i":"1",
-            "s":"15",
-            "o":"0",
-            "w":"%7C%7C%7C%7C%7C%7C%7C1%7C%7C0%7C%7C0"
+            "i": "1",
+            "s": "15",
+            "o": "0",
+            "w": "%7C%7C%7C%7C%7C%7C%7C1%7C%7C0%7C%7C0"
         }
     }
 ]
@@ -45,7 +42,6 @@ def process_spider_detail(conn, cursor, session: Session, log_id: int, **kwargs)
     :return:
     """
     for type in TYPES:
-        type_name = type['type']
         request_url = type['url']
         request_method = type['method']
         request_params = type['requestParams']
@@ -147,8 +143,6 @@ def parse_table(table_str):
             }
             rows.append(row)
         return rows
-
-
 
 
 if __name__ == '__main__':
