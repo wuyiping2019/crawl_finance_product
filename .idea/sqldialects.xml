@@ -7,5 +7,7 @@
     <file url="file://$PROJECT_DIR$/tables/spider_log.sql" dialect="Oracle" />
     <file url="file://$PROJECT_DIR$/tables/中信银行.sql" dialect="Oracle" />
     <file url="file://$PROJECT_DIR$/tables/中国光大银行.sql" dialect="Oracle" />
+    <file url="file://$PROJECT_DIR$/tables/中国民生银行.sql" dialect="Oracle" />
+    <file url="file://$PROJECT_DIR$/tables/华夏银行.sql" dialect="Oracle" />
   </component>
 </project>
