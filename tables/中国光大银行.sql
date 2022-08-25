@@ -34,7 +34,7 @@ begin
     select seq_ceb.nextval into :new.id from dual;
 end;
 
-select count(1) from ip_bank_ceb_personal;
+select * from ip_bank_ceb_personal;
 select count(1) from ip_bank_ceb_personal;
 select * from SPIDER_LOG order by id desc;
 

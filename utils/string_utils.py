@@ -7,4 +7,4 @@ def remove_space(string: str):
     :param string:
     :return:
     """
-    return re.sub(r'\s', '')
+    return re.sub(r'\s', '', string)
