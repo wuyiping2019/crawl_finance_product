@@ -4,19 +4,19 @@ create table ip_bank_payh_personal
 (
     id         number(11),
     logId      number(11),
-    cpmc       varchar2(1000), --产品名称
-    cpbm       varchar2(1000), --产品编码
-    gljg       varchar2(1000), --管理结构
-    fxdj       varchar2(1000), --风险等级
-    qgje       varchar2(1000), --起购金额
-    xsqy       varchar2(1000), --销售区域
-    cpzt       varchar2(1000), --产品状态
-    cplx       varchar2(1000),--产品类型
-    djbh       varchar2(1000),--登记编号
-    sfbzjsffs  varchar2(1000),--收费标准及收费方式
-    cpfl       varchar2(1000),--产品分类
-    cply      varchar2(1000),--产品来源
-    fxr        varchar2(1000),--发行人
+    cpbm       varchar2(1000),
+    tadm varchar2(1000),
+    cpmc       varchar2(1000),
+    fxr       varchar2(1000),
+    fxdj       varchar2(1000),
+    qgje       varchar2(1000),
+    xsqy       varchar2(1000),
+    cpzt       varchar2(1000),
+    cplx       varchar2(1000),
+    djbh   varchar2(1000),
+    cpfl       varchar2(1000),
+    cply       varchar2(1000),
+    cpgs varchar2(1000),
     createTime varchar2(1000)
 );
 --创建sequence
@@ -39,7 +39,7 @@ truncate table ip_bank_payh_personal;
 select count(1)
 from ip_bank_payh_personal;
 select *
-from ip_bank_payh_personal;
+from ip_bank_payh_personal order by createTime desc;
 select *
 from SPIDER_LOG
 order by id desc;

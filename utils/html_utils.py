@@ -17,7 +17,7 @@ def check_attr(tag: Tag, attr: str):
     return flag
 
 
-def parse_table(table: Tag, col_names: list, callbacks: dict):
+def parse_table(table: Tag, col_names: list, callbacks: dict, extra_attrs: dict):
     """
 
     :param table:
@@ -65,12 +65,19 @@ def parse_table(table: Tag, col_names: list, callbacks: dict):
                         col_span = int(tds[current_td_index]['colspan']) if check_attr(tds[current_td_index],
                                                                                        'colspan') else 1
         row_dict = {}
+        # 转换key
         for key, value in zip(col_names, row):
             row_dict[key] = value
+        # 删除pass的key
+        del row_dict['pass']
+        # 转换value
         for key in callbacks.keys():
-            callback = callbacks[key]
-            processed_value = str(callback(str(row_dict[key])))
-            row_dict[key] = processed_value
+            if key in row_dict.keys():
+                callback = callbacks[key]
+                processed_value = str(callback(str(row_dict[key])))
+                row_dict[key] = processed_value
+        if extra_attrs:
+            row_dict.update(extra_attrs)
         rows.append(row_dict)
     return rows
 

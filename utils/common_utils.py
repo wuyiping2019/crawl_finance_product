@@ -1,6 +1,7 @@
-def transform_rows(origin_rows: list, key_mappings: dict, callbacks: dict, ignore_attrs: list):
+def transform_rows(origin_rows: list, key_mappings: dict, callbacks: dict, ignore_attrs: list, extra_attrs: dict):
     """
 
+    :param extra_attrs: 额外需要添加的固定属性
     :param ignore_attrs: origin_rows中需要忽略的属性
     :param origin_rows: 一个dict的列表
     :param key_mappings: 针对origin_rows中字典的key进行转换
@@ -23,5 +24,7 @@ def transform_rows(origin_rows: list, key_mappings: dict, callbacks: dict, ignor
         for key in callbacks.keys():
             # 针对row中的value进行转换
             row[key] = callbacks[key](row[key])
+        if extra_attrs:
+            row.update(extra_attrs)
         rows.append(row)
     return rows

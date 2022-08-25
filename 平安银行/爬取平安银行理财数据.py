@@ -1,3 +1,4 @@
+import copy
 import json
 import math
 import time
@@ -16,72 +17,66 @@ from utils.selenium_utils import get_driver, close
 from utils.spider_flow import SpiderFlow, process_flow
 from selenium.webdriver.support import expected_conditions
 
+from utils.string_utils import remove_space
+
 REQUEST_URL = 'https://ebank.pingan.com.cn/aum/common/sales_list/index.html?initPage=true'
 TARGET_TABLE = 'ip_bank_payh_personal'
 LOG_NAME = '平安银行'
 
 
-class TypeEnum(Enum):
-    get_total_page_enum = '获取总页数'
-    get_target_page_data_enum = '获取指定页码数据'
+def document_initialised(driver):
+    WebDriverWait(driver, timeout=5).until(lambda d: d.find_element(By.TAG_NAME, "table"))
+    time.sleep(3)
 
 
-def get_data(driver: WebDriver,
-             script_func: str,
-             channel_code: str,
-             page_num: int,
-             typeEnum: TypeEnum,
-             page_size: int = None
-             ):
-    """
-        获取请求的总页数/或者获取页面的数据列表
-    :param driver:
-    :param script_func:
-    :param channel_code:
-    :param page_size:
-    :param page_num:
-    :param typeEnum:
-    :return:
-    """
-    if typeEnum == TypeEnum.get_total_page_enum:
-        resp = driver.execute_script(f"return {script_func}(1,{page_size},'{channel_code}')")
-        loads = json.loads(resp)
-        total_page = math.ceil(int(loads['data']['totalSize']) / page_size)
-        return total_page
-    if typeEnum == TypeEnum.get_target_page_data_enum:
-        resp = driver.execute_script(f"return {script_func}({page_num},{page_size},'{channel_code}')")
-        loads = json.loads(resp)
-        data_list = loads['data']['superviseProductInfoList']
-        return data_list
+def get_total_page(driver: WebDriver):
+    page = driver.find_element(By.XPATH,
+                               '//*[@id="root"]/section/div[3]/div/div/div[5]/div/div[1]/div[2]').find_element(
+        By.TAG_NAME, 'span').text
+    return int(page)
 
 
-def doCrawl(driver: WebDriver, method: str, page_size: int, channel_code: str, cursor):
-    total_page = get_data(driver, method, channel_code, 1, TypeEnum.get_total_page_enum, page_size)
-    for page in range(1, total_page + 1, 1):
-        rows = get_data(driver, method, channel_code, page, TypeEnum.get_target_page_data_enum, page_size)
-        transformed_rows = transform_rows(origin_rows=rows,
-                                          # 替换原dict的key值
-                                          key_mappings={'minAmount': 'qgje',
-                                                        'rateType': '',
-                                                        'riskLevel': 'fxdj',
-                                                        'prdName': 'cpmc',
-                                                        'prdType': '',
-                                                        'saleStatus': 'cpzt',
-                                                        'prdDetailUrl': 'cpxq_url',
-                                                        'prdCode': 'cpbm',
-                                                        'templateId': '',
-                                                        'productNo': 'cpbh'
-                                                        },
-                                          # key替换之后处理新dict的value回调函数
-                                          callbacks={},
-                                          # 原dict中忽略的属性
-                                          ignore_attrs=[
-
-                                          ])
-        for row in transformed_rows:
+def crawl(driver: WebDriver, cursor, log_id,
+          select_type_func, click_search_func, click_next_page_func,
+          table_columns: list,
+          callbacks: dict,
+          extra_attrs: dict
+          ):
+    def parse_html():
+        html = driver.execute_script('return document.documentElement.outerHTML')
+        document_initialised(driver)
+        soup = BeautifulSoup(html, 'lxml')
+        table = soup.select('table')[0]
+        rows = parse_table(table, ['cpbm', 'cpmc', 'fxr', 'fxdj', 'qgje', 'xsqy', 'cpzt', 'cplx', 'djbh', 'pass'],
+                           callbacks={'qgje': lambda x: str(x) + '元'},
+                           extra_attrs={
+                               'logId': log_id,
+                               'cpfl': '银行理财',
+                               'cply': '平安银行',
+                               'cpgs': '本行产品'
+                           })
+        for row in rows:
             insertLogToDB(cursor, row, TARGET_TABLE)
 
+    # 爬取-银行理财-数据
+    driver.find_element(By.XPATH, '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[1]/div/i').click()
+    document_initialised(driver)
+    driver.find_element(By.XPATH, '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[2]/ul/li[1]').click()
+    document_initialised(driver)
+    driver.find_element(By.XPATH, '//*[@id="su"]').click()
+    document_initialised(driver)
+    parse_html()
+    try:
+        page = get_total_page(driver)
+        for i in range(1, page):
+            driver.find_element(By.XPATH, '//*[@id="root"]/section/div[3]/div/div/div[5]/div/div[1]/a[3]').click()
+            document_initialised(driver)
+            parse_html()
+    except Exception as e:
+        print(e)
 
+
+# 本行理财-银行公司理财
 class SpiderFlowImpl(SpiderFlow):
     def callback(self, conn, cursor, session: Session, log_id: int, **kwargs):
         driver = None
@@ -89,16 +84,7 @@ class SpiderFlowImpl(SpiderFlow):
             driver = get_driver()
             driver.maximize_window()
             driver.get(REQUEST_URL)
-            # 爬取-银行理财-数据
-            with open('exec.js', 'r', encoding='utf-8') as f:
-                js = f.read()
-            driver.execute_script(js)
-            # 理财产品-总页数
-            method = 'doPostLCCPURL'
-            channel_code = 'C0002'
-            page_size = 10
-            doCrawl(driver, method, pa)
-
+            crawl_yhlc(driver, cursor, log_id)
 
         except Exception as e:
             print(e)

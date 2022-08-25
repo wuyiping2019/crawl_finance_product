@@ -1,11 +1,11 @@
 //理财产品
-lccp_url = 'https://ebank.pingan.com.cn/rmb/bron/ibank/pop/fund/supervise/qrySuperviseProductList.do'
+url = 'https://ebank.pingan.com.cn/rmb/bron/ibank/pop/fund/supervise/qrySuperviseProductList.do'
 //channelCode = C0002
-const doPostLCCPURL = async (pageNum, pageSize, channelCode) => {
-    let resp = await fetch(lccp_url,
+const doPost = async (tableIndex, dataType, tplId, pageNum, pageSize, channelCode, access_source) => {
+    let resp = await fetch(url,
         {
             method: 'post',
-            body: `tableIndex=table01&dataType=01&tplId=tpl01&pageNum=${pageNum}&pageSize=${pageSize}&channelCode=${channelCode}&access_source=PC`,
+            body: `tableIndex=${tableIndex}&dataType=${dataType}&tplId=${tplId}&pageNum=${pageNum}&pageSize=${pageSize}&channelCode=${channelCode}&access_source=${access_source}`,
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
             }
@@ -15,4 +15,4 @@ const doPostLCCPURL = async (pageNum, pageSize, channelCode) => {
         .catch(resp => resp);
     return resp
 }
-window.doPostLCCPURL = doPostLCCPURL
+window.doPost = doPost
