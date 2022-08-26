@@ -69,7 +69,10 @@ def parse_table(table: Tag, col_names: list, callbacks: dict, extra_attrs: dict)
         for key, value in zip(col_names, row):
             row_dict[key] = value
         # 删除pass的key
-        del row_dict['pass']
+        try:
+            del row_dict['pass']
+        except Exception as e:
+            print(e)
         # 转换value
         for key in callbacks.keys():
             if key in row_dict.keys():

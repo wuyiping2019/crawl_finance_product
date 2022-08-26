@@ -21,7 +21,7 @@ def transform_rows(origin_rows: list, key_mappings: dict, callbacks: dict, ignor
                 row[key_mappings[key]] = origin_row[key]
             else:
                 row[key] = origin_row[key]
-        for key in callbacks.keys():
+        for key in keys_in_callback:
             # 针对row中的value进行转换
             row[key] = callbacks[key](row[key])
         if extra_attrs:

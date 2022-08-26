@@ -97,28 +97,28 @@ class SpiderFlowImpl(SpiderFlow):
             callbacks = {'qgje': lambda x: str(x) + '元'}
             extra_attrs = {'logId': log_id, 'cpfl': '银行理财', 'cply': '平安银行', 'cpgs': '本行产品'}
 
-            # crawl(driver, cursor, select_type_func, click_search_func, click_next_page_func, table_columns,
-            #       callbacks, extra_attrs)
+            crawl(driver, cursor, select_type_func, click_search_func, click_next_page_func, table_columns,
+                  callbacks, extra_attrs)
 
             # 处理-银行公司理财-数据
-            # extra_attrs = {'logId': log_id, 'cpfl': '银行公司理财', 'cply': '平安银行', 'cpgs': '本行产品'}
+            extra_attrs = {'logId': log_id, 'cpfl': '银行公司理财', 'cply': '平安银行', 'cpgs': '本行产品'}
+
             def select_type_func():
                 select_target_type(driver, '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[1]/div/i',
                                    '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[2]/ul/li[2]')
 
-            #
-            # crawl(driver, cursor, select_type_func, click_search_func, click_next_page_func, table_columns,
-            #       callbacks, extra_attrs)
+            crawl(driver, cursor, select_type_func, click_search_func, click_next_page_func, table_columns,
+                  callbacks, extra_attrs)
 
             # 处理-对公结构性存款-数据
             extra_attrs = {'logId': log_id, 'cpfl': '对公结构性存款', 'cply': '平安银行', 'cpgs': '本行产品'}
 
             def select_type_func():
                 select_target_type(driver, '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[1]/div/i',
-                                   '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[2]/ul/li[2]')
+                                   '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[2]/ul/li[10]')
 
-            # crawl(driver, cursor, select_type_func, click_search_func, click_next_page_func, table_columns,
-            #       callbacks, extra_attrs)
+            crawl(driver, cursor, select_type_func, click_search_func, click_next_page_func, table_columns,
+                  callbacks, extra_attrs)
 
             # 处理-个人结构性存款-数据
             extra_attrs = {'logId': log_id, 'cpfl': '对公结构性存款', 'cply': '平安银行', 'cpgs': '本行产品'}
@@ -127,8 +127,8 @@ class SpiderFlowImpl(SpiderFlow):
                 select_target_type(driver, '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[1]/div/i',
                                    '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[2]/ul/li[3]')
 
-            # crawl(driver, cursor, select_type_func, click_search_func, click_next_page_func, table_columns,
-            #       callbacks, extra_attrs)
+            crawl(driver, cursor, select_type_func, click_search_func, click_next_page_func, table_columns,
+                  callbacks, extra_attrs)
             #########################################################################################################
             # 处理-公募基金-数据
             extra_attrs = {'logId': log_id, 'cpfl': '公募基金', 'cply': '平安银行', 'cpgs': '代销产品'}
@@ -138,8 +138,8 @@ class SpiderFlowImpl(SpiderFlow):
                 select_target_type(driver, '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[1]/div/i',
                                    '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[2]/ul/li[4]')
 
-            # crawl(driver, cursor, select_type_func, click_search_func, click_next_page_func, table_columns,
-            #       callbacks, extra_attrs)
+            crawl(driver, cursor, select_type_func, click_search_func, click_next_page_func, table_columns,
+                  callbacks, extra_attrs)
 
             # 处理-理财子-数据
             extra_attrs = {'logId': log_id, 'cply': '平安银行', 'cpgs': '代销产品'}
@@ -149,8 +149,8 @@ class SpiderFlowImpl(SpiderFlow):
                 select_target_type(driver, '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[1]/div/i',
                                    '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[2]/ul/li[5]')
 
-            # crawl(driver, cursor, select_type_func, click_search_func, click_next_page_func, table_columns,
-            #       callbacks, extra_attrs)
+            crawl(driver, cursor, select_type_func, click_search_func, click_next_page_func, table_columns,
+                  callbacks, extra_attrs)
 
             # 处理-公司代销理财-数据
             extra_attrs = {'logId': log_id, 'cply': '平安银行', 'cpgs': '代销产品'}
@@ -160,18 +160,19 @@ class SpiderFlowImpl(SpiderFlow):
                 select_target_type(driver, '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[1]/div/i',
                                    '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[2]/ul/li[11]')
 
-            # crawl(driver, cursor, select_type_func, click_search_func, click_next_page_func, table_columns,
-            #       callbacks, extra_attrs)
+            crawl(driver, cursor, select_type_func, click_search_func, click_next_page_func, table_columns,
+                  callbacks, extra_attrs)
 
             # 处理-养老保障-数据
             extra_attrs = {'logId': log_id, 'cply': '平安银行', 'cpfl': '养老保障', 'cpgs': '代销产品'}
             table_columns = ['cpbm', 'cpmc', 'tadm', 'fxr', 'pass', 'cpzt', 'fxdj', 'xsqy', 'pass']
+
             def select_type_func():
                 select_target_type(driver, '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[1]/div/i',
                                    '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[2]/ul/li[6]')
-            #
-            # crawl(driver, cursor, select_type_func, click_search_func, click_next_page_func, table_columns,
-            #       callbacks, extra_attrs)
+
+            crawl(driver, cursor, select_type_func, click_search_func, click_next_page_func, table_columns,
+                  callbacks, extra_attrs)
 
             # 处理-保险-数据
             extra_attrs = {'logId': log_id, 'cply': '平安银行', 'cpfl': '保险', 'cpgs': '代销产品'}
@@ -190,21 +191,20 @@ class SpiderFlowImpl(SpiderFlow):
 
             def select_type_func():
                 select_target_type(driver, '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[1]/div/i',
-                                   '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[2]/ul/li[6]')
+                                   '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[2]/ul/li[8]')
 
-            # crawl(driver, cursor, select_type_func, click_search_func, click_next_page_func, table_columns,
-            #       callbacks, extra_attrs)
-
+            crawl(driver, cursor, select_type_func, click_search_func, click_next_page_func, table_columns,
+                  callbacks, extra_attrs)
             # 处理-保险金信托-数据
             extra_attrs = {'logId': log_id, 'cply': '平安银行', 'cpfl': '保险金信托', 'cpgs': '代销产品'}
             table_columns = ['cpmc', 'cplx', 'fxr', 'fxdj', 'pass', 'pass', 'pass']
 
             def select_type_func():
                 select_target_type(driver, '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[1]/div/i',
-                                   '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[2]/ul/li[6]')
+                                   '//*[@id="root"]/section/div[3]/div/div/div[2]/div/div/div[2]/ul/li[9]')
 
-            # crawl(driver, cursor, select_type_func, click_search_func, click_next_page_func, table_columns,
-            #       callbacks, extra_attrs)
+            crawl(driver, cursor, select_type_func, click_search_func, click_next_page_func, table_columns,
+                  callbacks, extra_attrs)
 
         except Exception as e:
             print(e)
