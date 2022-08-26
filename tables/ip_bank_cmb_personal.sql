@@ -61,7 +61,7 @@ begin
 end;
 
 truncate table ip_bank_cmb_personal;
-
+select * from ip_bank_cmb_personal;
 
 insert into ip_bank_cmb_personal(PrdName) values ('ceshi');
 select * from ip_bank_cmb_personal;

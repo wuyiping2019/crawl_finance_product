@@ -23,7 +23,7 @@ create or replace trigger ip_zglcw_bank_trigger_id
 begin
     select ip_zglcw_bank_id.nextval into :new.id from dual;
 end;
-
+selECT * from ip_zglcw_bank
 -- 测试
 -- insert into ip_zglcw_bank(dm) values ('ceshi');
 -- select * from ip_zglcw_bank;

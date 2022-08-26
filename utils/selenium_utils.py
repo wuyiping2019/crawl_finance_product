@@ -17,3 +17,10 @@ def open_chrome(driver, url):
 
 def get_html(driver):
     return driver.execute_script("return document.documentElement.outerHTML")
+
+
+def close(driver):
+    if driver:
+        driver.close()
+    if driver:
+        driver.quit()
