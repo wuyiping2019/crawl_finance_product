@@ -1,4 +1,4 @@
--- 创建招商银行个人理财产品表
+-- 创建中国农业银行理财产品表
 drop table ip_bank_abc_personal;
 CREATE TABLE ip_bank_abc_personal
 (
