@@ -1,8 +1,9 @@
 import pymysql
-from global_config import init_oracle
+from global_config import init_oracle, DBType
 from global_config import mysql_database, mysql_password, mysql_user, mysql_autocommit, mysql_host
 from global_config import oracle_user, oracle_password, oracle_uri
 import cx_Oracle as cx
+from global_config import DB_ENV
 
 
 def createInsertSql(properties: dict):
@@ -35,7 +36,15 @@ def get_conn_mysql():
 
 
 def get_conn_oracle():
+    init_oracle()
     return cx.connect(oracle_user, oracle_password, oracle_uri)
+
+
+def get_conn():
+    if DB_ENV == DBType.mysql:
+        return get_conn_mysql()
+    if DB_ENV == DBType.oracle:
+        return get_conn_oracle()
 
 
 def close(objs: list):
@@ -45,5 +54,10 @@ def close(objs: list):
 
 
 __all__ = [
-    "get_conn_mysql", "get_conn_oracle", "createInsertSql", "close"
+    "get_conn_mysql", "get_conn_oracle", "createInsertSql", "close", "get_conn"
 ]
+
+if __name__ == '__main__':
+    conn = get_conn()
+    cursor = conn.cursor()
+

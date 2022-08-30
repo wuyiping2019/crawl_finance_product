@@ -64,4 +64,6 @@ truncate table ip_bank_cmb_personal;
 select * from ip_bank_cmb_personal;
 
 insert into ip_bank_cmb_personal(PrdName) values ('ceshi');
-select * from ip_bank_cmb_personal;
+select * from ip_bank_cmb_personal order by createTime desc;
+select count(1) from ip_bank_cmb_personal where logId = 30
+

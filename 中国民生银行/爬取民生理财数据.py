@@ -94,6 +94,7 @@ class SpiderFlowImpl(SpiderFlow):
             # 此处的异常必须抛出 否则外面的try catch无法捕获异常
             # 也就无法知道此次爬虫是失败还是成功 无法正确记录日志
             print(e)
+            raise e
         finally:
             close(driver)
 

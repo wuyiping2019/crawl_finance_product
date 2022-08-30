@@ -41,11 +41,11 @@ truncate table ip_bank_hxyh_personal;
 select count(1)
 from ip_bank_hxyh_personal;
 select *
-from ip_bank_hxyh_personal where logId=260 and dwjz is not null order by createTime desc;
+from ip_bank_hxyh_personal order by createTime desc;
 select *
 from SPIDER_LOG
 order by id desc;
-
+select count(1) from ip_bank_hxyh_personal a where a.logId = 262;
 select *
 from SPIDER_LOG
 order by id desc;

@@ -56,4 +56,5 @@ order by id desc;
 select *
 from SPIDER_LOG
 order by id desc;
+select count(1) from ip_bank_zgmsyh_personal a where a.logId = 391
 
