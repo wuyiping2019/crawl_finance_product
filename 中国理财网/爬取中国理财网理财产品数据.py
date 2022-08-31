@@ -169,10 +169,7 @@ def parse_table(table_str):
     """
     rep = json.loads(table_str)['List']
     rows = []
-    index = 0
     for product in rep:
-        print(index)
-        index = index+1
         if ('cptzxzms' in product):
             cptzxzms = product['cptzxzms']
         else:
