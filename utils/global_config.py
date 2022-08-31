@@ -1,6 +1,14 @@
-ORACLE_CLIENT = r'D:\instantclient_21_6'
+from enum import Enum
+
+
+class DBType(Enum):
+    oracle = 'ORACLE'
+    mysql = 'MYSQL'
+
+
+ORACLE_CLIENT = r'D:\servers\instantclient_21_6'
 LOG_TABLE = 'spider_log'
-DB_ENV = 'ORACLE'
+DB_ENV = DBType.oracle
 
 mysql_host = '10.2.13.223'
 mysql_user = 'root'

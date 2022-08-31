@@ -1,6 +1,7 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
 
@@ -17,6 +18,9 @@ def open_chrome(driver, url):
 
 def get_html(driver):
     return driver.execute_script("return document.documentElement.outerHTML")
+
+
+
 
 
 def close(driver):

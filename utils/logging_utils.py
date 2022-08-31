@@ -2,7 +2,7 @@ import logging
 
 
 def get_logger(fileName, loggerName):
-    file_handler = logging.FileHandler(filename='./log/%s.log' % fileName,
+    file_handler = logging.FileHandler(filename=fileName,
                                        encoding='utf-8',
                                        mode='w')
     formatter = logging.Formatter("%(asctime)s - %(name)s-%(levelname)s %(message)s")

@@ -39,7 +39,8 @@ truncate table ip_bank_xyyh_personal;
 select count(1)
 from ip_bank_xyyh_personal;
 select *
-from ip_bank_xyyh_personal;
+from ip_bank_xyyh_personal order by createTime desc ;
+select count(1) from ip_bank_xyyh_personal a where a.logId = 484;
 select *
 from SPIDER_LOG
 order by id desc;

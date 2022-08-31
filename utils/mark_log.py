@@ -10,9 +10,10 @@ def getLocalDate():
     return now.strftime("%Y-%m-%d %H:%M:%S")
 
 
-def updateLogToDB(cur: Cursor, log_id: int, properties: dict):
+def updateLogToDB(cur: Cursor, log_id: int, properties: dict, log_table=LOG_TABLE):
     """
     更新日志信息 没有提交事务(更新的属性除了properties中，自动包括updateTime字段)
+    :param log_table:
     :param cur:
     :param log_id:
     :param properties:
@@ -24,7 +25,7 @@ def updateLogToDB(cur: Cursor, log_id: int, properties: dict):
     for key in properties.keys():
         set_prop += "%s='%s' , " % (key, properties[key])
     set_prop = set_prop.strip().strip(',')
-    update_sql = """update %s set %s where id = %s """ % (LOG_TABLE, set_prop, log_id)
+    update_sql = """update %s set %s where id = %s """ % (log_table, set_prop, log_id)
     cur.execute(update_sql)
 
 
@@ -94,9 +95,10 @@ def mark_success_log(count: str, endDate: str, generated_log_id: int, cursor):
     cursor.connection.commit()
 
 
-def mark_failure_log(e: Exception, endDate: str, generated_log_id: int, cursor):
+def mark_failure_log(e: Exception, endDate: str, generated_log_id: int, cursor, count=0):
     """
     记录失败日志
+    :param count:
     :param e:
     :param endDate:
     :param generated_log_id:
@@ -106,7 +108,7 @@ def mark_failure_log(e: Exception, endDate: str, generated_log_id: int, cursor):
     log_info = {
         "status": "完成",
         "endDate": endDate,
-        "count": 0,
+        "count": count,
         "result": "失败",
         "detail": str(e)
     }

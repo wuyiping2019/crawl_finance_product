@@ -33,5 +33,6 @@ begin
     select seq_cncb.nextval into :new.id from dual;
 end;
 
-select * from ip_bank_cncb_personal;
+select * from ip_bank_cncb_personal order by createTime desc ;
+select COUNT(1) from ip_bank_cncb_personal a where a.logId = 61;
 
