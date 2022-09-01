@@ -126,6 +126,8 @@ def parse_table(table_str):
     rows = []
     for h1, table in zip(h1s[1:], tables):
         trs = table.select('tr')
+        ths = table.select('th')
+        ths = [''.join(th.text.split()) for th in ths]
         line_map = {}
         for tr in trs[1:]:
             tds = tr.select('td')
@@ -142,22 +144,67 @@ def parse_table(table_str):
                     for i in range(1, int(colspan)):
                         line_map[current_line_index] = td
                         current_line_index += 1
-            row = None
+            sale_type = []
+            for k, v in line_map.items():
+                k = ths[k]
+                if k in ['柜面', '网银', '手机银行', '自助终端', '快信通', '微信']:
+                    if v == '√':
+                        sale_type.append(k)
+                    continue
+            del line_map[5]
+            del line_map[6]
+            del line_map[7]
+            del line_map[8]
+            del line_map[9]
+            del line_map[10]
+            sale_type = ','.join(sale_type)
+            line_map[5] = sale_type
             if h1.text in ('净值型产品(中银理财子公司旗下)','人民币理财产品','外币理财产品'):
-                line_map[current_line_index] = h1.text
-                row = get_row(
-                    ['ProductCode', 'ProductName', 'ProdLimit', 'ProdProfit', 'PurStarAmo', 'Countertop',
-                     'InternetBank', 'MobileBank', 'SelfTerminal',
-                     'FastCommunication', 'WeChat', 'RiskLevel', 'CollectionStartDate', 'CollectionEndDate',
-                     'InterestCommencementDate', 'MaturityDate',
-                     'InvestorsType', 'ProdArea','ProductType'], line_map)
+                # line_map[current_line_index] = h1.text
+                row = {
+                    'cpbm': line_map[0],
+                    'cpmc': line_map[1],
+                    'cpqx': line_map[2],
+                    'yjbjjz_jz': line_map[3],
+                    'qgje': line_map[4],
+                    'xsqd': line_map[5],
+                    'fxdj': line_map[11],
+                    'mjqsrq': line_map[12],
+                    'mjjsrq': line_map[13],
+                    'qxr': line_map[14],
+                    'fbq': line_map[15],
+                    'tzzlx': line_map[16],
+                    'xsqy': line_map[17],
+                    'cplx': h1.text
+                }
+                # row = get_row(
+                #     ['ProductCode', 'ProductName', 'ProdLimit', 'ProdProfit', 'PurStarAmo', 'Countertop',
+                #      'InternetBank', 'MobileBank', 'SelfTerminal',
+                #      'FastCommunication', 'WeChat', 'RiskLevel', 'CollectionStartDate', 'CollectionEndDate',
+                #      'InterestCommencementDate', 'MaturityDate',
+                #      'InvestorsType', 'ProdArea','ProductType'], line_map)
             elif h1.text == '长期开放类理财产品':
-                line_map[current_line_index] = h1.text
-                row = get_row(
-                    ['ProductCode', 'ProductName', 'ProdLimit', 'ProdProfit', 'PurStarAmo', 'Countertop',
-                     'InternetBank', 'MobileBank', 'SelfTerminal',
-                     'FastCommunication', 'WeChat', 'RiskLevel', 'PurchaseInstructions', 'RedemptionInstructions',
-                     'InvestorsType', 'ProdArea','ProductType'], line_map)
+                # line_map[current_line_index] = h1.text
+                row = {
+                    'cpbm': line_map[0],
+                    'cpmc': line_map[1],
+                    'cpqx': line_map[2],
+                    'yjbjjz_jz': line_map[3],
+                    'qgje': line_map[4],
+                    'xsqd': line_map[5],
+                    'fxdj': line_map[11],
+                    'sggzsm': line_map[12],
+                    'hsgzsm': line_map[13],
+                    'tzzlx': line_map[14],
+                    'xsqy': line_map[15],
+                    'cplx': h1.text
+                }
+
+                # row = get_row(
+                #     ['ProductCode', 'ProductName', 'ProdLimit', 'ProdProfit', 'PurStarAmo', 'Countertop',
+                #      'InternetBank', 'MobileBank', 'SelfTerminal',
+                #      'FastCommunication', 'WeChat', 'RiskLevel', 'PurchaseInstructions', 'RedemptionInstructions',
+                #      'InvestorsType', 'ProdArea','ProductType'], line_map)
             rows.append(row)
     return rows
 
