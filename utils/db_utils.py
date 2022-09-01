@@ -89,6 +89,24 @@ def insert_to_db(cursor, props_dict: dict, target_table: str, db_type: DBType = 
     cursor.execute(sql, params)
 
 
+def update_to_db(cursor,
+                 update_props: dict,
+                 constraint_props: dict,
+                 target_table: str,
+                 db_type: DBType = DB_ENV):
+    """
+    根据传入的需要更新的字段和约束条件进行更新
+    :param cursor:
+    :param update_props: 更新的字段
+    :param constraint_props: 约束条件字段
+    :param target_table: 目标表
+    :param db_type: 数据库类型(mysql或oracle)
+    :return:
+    """
+    sql, params = create_update_sql_and_params(update_props, constraint_props, target_table, db_type)
+    cursor.execute(sql, params)
+
+
 def get_conn_mysql(host=mysql_host, user=mysql_user, password=mysql_password, database=mysql_database):
     """
     连接mysql数据库
