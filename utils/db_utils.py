@@ -1,5 +1,3 @@
-import sys
-
 import pymysql
 from global_config import init_oracle, DBType
 from global_config import mysql_database, mysql_password, mysql_user, mysql_autocommit, mysql_host
@@ -7,6 +5,18 @@ from global_config import oracle_user, oracle_password, oracle_uri
 import cx_Oracle as cx
 from global_config import DB_ENV
 from utils.string_utils import remove_space
+
+__all__ = [
+    "close",
+    "get_conn",
+    'create_table',
+    'check_field_exists',
+    'check_table_exists',
+    'add_field',
+    'process_dict',
+    'insert_to_db',
+    'update_to_db'
+]
 
 
 def createInsertSql(properties: dict, db_type: DBType):
@@ -295,18 +305,6 @@ def process_dict(data_dict: dict):
             row[k] = v
     return row
 
-
-__all__ = [
-    "close",
-    "get_conn",
-    'create_table',
-    'check_field_exists',
-    'check_table_exists',
-    'add_field',
-    'process_dict',
-    'insert_to_db',
-    'update_to_db'
-]
 
 if __name__ == '__main__':
     conn = get_conn()
