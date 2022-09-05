@@ -2,18 +2,18 @@
 drop table ip_bank_icbc_personal;
 CREATE TABLE ip_bank_icbc_personal
 (
-    id                          number(11),
-    logId                       number(11),
-    IssuingBank            varchar2(100),
-    State                    varchar2(1000),
-    ProdName                   varchar2(1000),
-    UnitNet                   varchar2(1000),
-    SharesGain                   varchar2(1000),
-    ProdProfit                varchar2(1000),
-    PurStarAmo                     varchar2(1000),
-    ProdLimit                  varchar2(1000),
-    RiskLevel                  varchar2(1000),
-    createTime                  varchar2(100)
+    id              number(11),
+    logId           number(11),
+    fxjg            varchar2(100),
+    cpzt            varchar2(1000),
+    cpmc            varchar2(1000),
+    jz              varchar2(1000),
+    mwfsy           varchar2(1000),
+    cpsy            varchar2(1000),
+    qgje            varchar2(1000),
+    zdcyqx          varchar2(1000),
+    fxdj            varchar2(1000),
+    createTime      varchar2(100)
 );
 -- 创建日志表的序列（用于主键自增）
 --drop sequence seq_icbc;

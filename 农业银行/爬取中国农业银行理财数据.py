@@ -10,11 +10,22 @@ TAGET_TABLE = 'ip_bank_abc_personal'
 LOG_NAME = '中国农业银行'
 
 HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36',
-    'X-Requested-With': 'XMLHttpRequest',
-    'Referer': 'http://ewealth.abchina.com/fs/filter/',
-    'Host': 'ewealth.abchina.com',
-    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+    "Accept": "application/json, text/javascript, */*; q=0.01",
+  "Accept-Encoding": "gzip, deflate, br",
+  "Accept-Language": "zh-CN,zh;q=0.9",
+  "Cache-Control": "no-cache",
+  "Connection": "keep-alive",
+  "Host": "ewealth.abchina.com",
+  "Pragma": "no-cache",
+  "Referer": "https//ewealth.abchina.com/fs/filter/default_9148.htm",
+  "sec-ch-ua": "Chromium;v=104, Not A;Brand;v=99, Google Chrome;v=104",
+  "sec-ch-ua-mobile": "?0",
+  "sec-ch-ua-platform": "Windows",
+  "Sec-Fetch-Dest": "empty",
+  "Sec-Fetch-Mode": "cors",
+  "Sec-Fetch-Site": "same-origin",
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36",
+  "X-Requested-With": "XMLHttpRequest"
 }
 
 TYPES = [
@@ -72,9 +83,10 @@ def process_one_page(session: Session,
     """
     resp = session.request(method=request_method, url=request_url, params=request_params, headers=HEADERS).text
     rows = parse_table(resp)
-    for row in rows:
-        row['logId'] = log_id
-        insertLogToDB(cur, row, TAGET_TABLE)
+    if not rows == None:
+        for row in rows:
+            row['logId'] = log_id
+            insertLogToDB(cur, row, TAGET_TABLE)
 
 
 def loop_pages(total_pages: int,
@@ -96,7 +108,12 @@ def loop_pages(total_pages: int,
     :return:
     """
     for page in range(1, total_pages + 1, 1):
-        request_params['page'] = str(page)
+        request_params['i'] = str(page)
+        print(page)
+        if page == 157:
+            print(page)
+            print(request_params['i'])
+            request_params['i'] = str(page)
         process_one_page(session, cur, log_id, request_url, request_method, request_params)
 
 
@@ -127,17 +144,17 @@ def parse_table(table_str):
             row = {
                 'collectionMethod': product['collectionMethod'],
                 'IsCanBuy': product['IsCanBuy'],
-                'ProdClass': product['ProdClass'],
-                'ProdYildType': product['ProdYildType'],
-                'ProdLimit': product['ProdLimit'],
-                'ProdProfit': product['ProdProfit'],
-                'PurStarAmo': product['PurStarAmo'],
-                'ProdArea': product['ProdArea'],
-                'ProdSaleDate': product['ProdSaleDate'],
+                'yzms': product['ProdClass'],
+                'sylx': product['ProdYildType'],
+                'zdcyqx': product['ProdLimit'],
+                'yjbjjz': product['ProdProfit'],
+                'qgje': product['PurStarAmo'],
+                'xsqy': product['ProdArea'],
+                'xsqx': product['ProdSaleDate'],
                 'PrdYildTypeOrder': product['PrdYildTypeOrder'],
-                'ProductNo': product['ProductNo'],
-                'ProdName': product['ProdName'],
-                'issuingOffice': product['issuingOffice'],
+                'cpbm': product['ProductNo'],
+                'cpmc': product['ProdName'],
+                'fxjg': product['issuingOffice'],
                 'yjjzIntro': product['yjjzIntro'],
                 'szComDat': product['szComDat']
             }

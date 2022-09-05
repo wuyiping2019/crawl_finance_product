@@ -174,7 +174,7 @@ def parse_table(table_str):
         UnitNet=''
         for index in range(tr.select('.ebdp-pc4promote-doublelabel-content').__len__()):
             title = tr.select('.ebdp-pc4promote-doublelabel-text')[index].text
-            if title in ('成立以来年化收益','七日年化收益率','业绩比较基准','近三月年化收益','近一月年化收益','近六月年化收益','预期年化收益率',):
+            if title in ('成立以来年化收益','七日年化收益率','业绩比较基准','近三月年化收益','近一月年化收益','近六月年化收益','预期年化收益率'):
                 ProdProfit = tr.select('.ebdp-pc4promote-doublelabel-content')[index].text
             elif title in ('起购金额'):
                 PurStarAmo = tr.select('.ebdp-pc4promote-doublelabel-content')[index].text
@@ -187,15 +187,15 @@ def parse_table(table_str):
             elif title in ('单位净值'):
                 UnitNet = tr.select('.ebdp-pc4promote-doublelabel-content')[index].text
         row = {
-            'IssuingBank': IssuingBank,
-            'State': State,
-            'ProdName': ProdName,
-            'UnitNet': UnitNet,
-            'SharesGain': SharesGain,
-            'ProdProfit': ProdProfit,
-            'PurStarAmo': PurStarAmo,
-            'ProdLimit': ProdLimit,
-            'RiskLevel': RiskLevel
+            'fxjg': IssuingBank,
+            'cpzt': State,
+            'cpmc': ProdName,
+            'jz': UnitNet,
+            'mwfsy': SharesGain,
+            'cpsy': ProdProfit,
+            'qgje': PurStarAmo,
+            'zdcyqx': ProdLimit,
+            'fxdj': RiskLevel
         }
         rows.append(row)
     return rows
