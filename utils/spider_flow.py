@@ -2,6 +2,7 @@ import abc
 from inspect import isfunction
 
 import requests
+from cx_Oracle import Connection
 from requests import Session
 
 from utils.db_utils import get_conn_oracle, close
@@ -56,7 +57,6 @@ def process_flow(log_name, target_table, callback, **kwargs):
                      **kwargs)
         # 查询插入的数据条数
         count = get_write_count(target_table, generated_log_id, cursor)
-        print("插入的数据条数"+str(count))
         # 记录成功日志
         mark_success_log(count, getLocalDate(), generated_log_id, cursor)
     except Exception as e:

@@ -23,9 +23,13 @@ def updateLogToDB(cur: Cursor, log_id: int, properties: dict, log_table=LOG_TABL
     properties['updateTime'] = local_date
     set_prop = ''
     for key in properties.keys():
-        set_prop += "%s='%s' , " % (key, properties[key])
+        value = None
+        if '"' in str(properties[key]):
+            value = str(properties[key]).replace('"', '\\"')
+        set_prop += "%s='%s' , " % (key, value if value is not None else properties[key])
     set_prop = set_prop.strip().strip(',')
     update_sql = """update %s set %s where id = %s """ % (log_table, set_prop, log_id)
+    print(update_sql)
     cur.execute(update_sql)
 
 
@@ -40,6 +44,8 @@ def insertLogToDB(cur: Cursor, properties: dict, log_table=LOG_TABLE):
     local_date = getLocalDate()
     properties['createTime'] = local_date
     fields, values = createInsertSql(properties)
+    if '"' in values:
+        values = values.replace('"', '\"')
     insert_sql = """insert into %s(%s) values(%s)""" % (log_table, fields, values)
     print(insert_sql)
     cur.execute(insert_sql)

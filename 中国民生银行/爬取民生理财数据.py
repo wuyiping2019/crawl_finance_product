@@ -2,9 +2,12 @@ import json
 import math
 import time
 
+import requests
+
 from utils.mark_log import insertLogToDB
 from utils.selenium_utils import get_driver, close
 from utils.spider_flow import process_flow, SpiderFlow
+from utils.string_utils import remove_space
 
 LOG_NAME = '中国民生银行'
 TARGET_TABLE = 'ip_bank_zgmsyh_personal'
@@ -47,7 +50,8 @@ def parse_page_json(page_json):
             'ipo_kssj': prdInfo['ipoStartDate'],  # ipo开始时间
             'ipo_jssj': prdInfo['ipoEndDate'],  # ipo结束时间
             'cped': prdInfo['totAmt'],  # 产品总额度
-            'yjbjjz': '%.2f' % (prdInfo['benchMarkMin'] * 100) + '%~' + '%.2f' % (prdInfo['benchMarkMax'] * 100) if incomInfo['incomeTitle'] == '业绩比较基准' else '',  # 业绩比较基准
+            'yjbjjz': '%.2f' % (prdInfo['benchMarkMin'] * 100) + '%~' + '%.2f' % (prdInfo['benchMarkMax'] * 100) if
+            incomInfo['incomeTitle'] == '业绩比较基准' else '',  # 业绩比较基准
             'zsjz': prdInfo['remark'],  # 指数基准
             'cplx': incomInfo['prdTypeStr'],  # 产品类型
             'syms': prdInfo['benchMarkBasis'],  # 收益描述

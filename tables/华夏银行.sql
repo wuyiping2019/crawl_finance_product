@@ -28,6 +28,7 @@ create sequence seq_hxyh
     start with 1
     increment by 1
     cache 50;
+
 --创建trigger
 create or replace trigger trigger_hxyh
     before insert

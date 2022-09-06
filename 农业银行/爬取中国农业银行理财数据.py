@@ -9,7 +9,7 @@ from utils.spider_flow import process_flow
 TAGET_TABLE = 'ip_bank_abc_personal'
 LOG_NAME = '中国农业银行'
 
-HEADERS = {
+HEADERSPC = {
     "Accept": "application/json, text/javascript, */*; q=0.01",
   "Accept-Encoding": "gzip, deflate, br",
   "Accept-Language": "zh-CN,zh;q=0.9",
@@ -56,7 +56,7 @@ def process_spider_detail(conn, cursor, session: Session, log_id: int, **kwargs)
         request_url = type['url']
         request_method = type['method']
         request_params = type['requestParams']
-        resp = session.request(method=request_method, url=request_url, params=request_params, headers=HEADERS).text
+        resp = session.request(method=request_method, url=request_url, params=request_params, headers=HEADERSPC).text
         # 获取总页数
         total_page = get_total_page(resp)
         # 循环处理每页数据
@@ -81,7 +81,7 @@ def process_one_page(session: Session,
     :param request_params: 请求参数
     :return:
     """
-    resp = session.request(method=request_method, url=request_url, params=request_params, headers=HEADERS).text
+    resp = session.request(method=request_method, url=request_url, params=request_params, headers=HEADERSPC).text
     rows = parse_table(resp)
     if not rows == None:
         for row in rows:
