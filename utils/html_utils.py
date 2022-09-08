@@ -17,7 +17,7 @@ def check_attr(tag: Tag, attr: str):
     return flag
 
 
-def parse_table(table: Tag, col_names: list, callbacks: dict, extra_attrs: dict):
+def parse_table(table: Tag, col_names: list, callbacks: dict, extra_attrs: dict, head_tag: str = 'th'):
     """
 
     :param table:
@@ -27,12 +27,14 @@ def parse_table(table: Tag, col_names: list, callbacks: dict, extra_attrs: dict)
     """
     table_head = table.select('tr')[0]
     heads = []
-    trs = table_head.select('th')
+    trs = table_head.select(head_tag)
     for tr in trs:
         heads.append(remove_space(tr.text))
     # 该表单的列数
     cols = len(heads)
     trs = table.select('tr')
+    if head_tag == 'tr':
+        trs = trs[1:]
     rows = []
     for index, tr in enumerate(trs):
         row = []

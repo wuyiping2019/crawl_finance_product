@@ -1,9 +1,13 @@
+import sys
+from typing import List, Any
+
 import pymysql
 from global_config import init_oracle, DBType
 from global_config import mysql_database, mysql_password, mysql_user, mysql_autocommit, mysql_host
 from global_config import oracle_user, oracle_password, oracle_uri
 import cx_Oracle as cx
 from global_config import DB_ENV
+from utils.custom_exception import raise_exception
 from utils.string_utils import remove_space
 
 __all__ = [
@@ -15,11 +19,13 @@ __all__ = [
     'add_field',
     'process_dict',
     'insert_to_db',
-    'update_to_db'
+    'update_to_db',
+    'update_else_insert_to_db',
+    'add_fields'
 ]
 
 
-def createInsertSql(properties: dict, db_type: DBType):
+def createInsertSql(properties: dict, db_type: DBType = DB_ENV):
     """
         Return
             Fields,like `key1,key2,key3`
@@ -39,6 +45,48 @@ def createInsertSql(properties: dict, db_type: DBType):
     return fields, values
 
 
+def update_else_insert_to_db(cursor,
+                             target_table: str,
+                             props_dict: dict,
+                             check_props: dict,
+                             db_type: DBType = DB_ENV):
+    """
+    使用的where约束条件对数据执行更新操作,如果不存在则执行插入操作
+    :param cursor: 操作数据库的cursor对象
+    :param target_table:目标表
+    :param props_dict: 一条数据的dict
+    :param check_props: 判断该条数据是否存在的约束条件
+    :param db_type: 数据库类型(oracle或mysql)
+    :return:
+    """
+    # 检查目标的约束条件下是否存在数据
+    select_from_db(cursor, target_table, [1], check_props)
+    rs = cursor.fetchone()
+    if rs is None or rs[0] is None:
+        # 表示不存在 执行插入操作
+        insert_to_db(cursor, props_dict, target_table)
+        # cursor.connection.commit()
+    else:
+        # 表示存在该数据 执行更新操作
+        update_to_db(cursor, props_dict, check_props, target_table)
+        # cursor.connection.commit()
+
+
+def add_fields(cursor, target_table: str, fields: list, filed_type: str):
+    """
+    向木啊表表中弘批量添加不存在的字段
+    :param cursor:操作数据库的对象
+    :param target_table: 目标表
+    :param fields: 需要批量添加的列名,在添加之前会进行字段是否存在的校验
+    :param filed_type:字段统一的类型
+    :return:
+    """
+    for field in fields:
+        if not check_field_exists(field, target_table, cursor):
+            add_field(field, filed_type, target_table, cursor)
+    cursor.close()
+
+
 def create_insert_sql_and_params(props_dict: dict, target_table: str, db_type: DBType = DB_ENV):
     """
     根据字典数据 创建insert sql以及cursor.execute需要传入的参数
@@ -53,7 +101,7 @@ def create_insert_sql_and_params(props_dict: dict, target_table: str, db_type: D
         params = []
         for k, v in props_dict.items():
             fields += f'{k},'
-            values += f'%s,' if db_type == DBType.mysql else f':{k}'
+            values += f'%s,' if db_type == DBType.mysql else f':{k},'
             params.append(v)
         sql = f"""
             insert into {target_table}({fields.strip(',')})
@@ -62,13 +110,38 @@ def create_insert_sql_and_params(props_dict: dict, target_table: str, db_type: D
         return sql, tuple(params) if db_type == DBType.mysql else params
 
 
-def create_update_sql_and_params(update_props: dict,
+def __select_table_meta(cursor, target_table: str, db_type: DBType = DB_ENV):
+    """
+    查询指定表的所有字段类型
+    :param cursor:
+    :param target_table:
+    :param db_type:
+    :return:
+    """
+    meta_dict = {}
+    if db_type == DBType.oracle:
+        sql = f"""
+            select column_name,data_type
+            from all_tab_columns
+            where table_name = '{target_table.upper()}'
+        """
+        fetchall = cursor.execute(sql).fetchall()
+        for row in fetchall:
+            meta_dict[row[0].upper()] = row[1].upper()
+    if db_type == DBType.mysql:
+        pass
+    return meta_dict
+
+
+def create_update_sql_and_params(cursor,
+                                 update_props: dict,
                                  constraint_props: dict,
                                  target_table: str,
                                  db_type: DBType = DB_ENV):
     set_str = ''
     where_str = ''
     params = []
+    meta = __select_table_meta(cursor, target_table)
     if not update_props:
         return
     for k, v in update_props.items():
@@ -76,7 +149,9 @@ def create_update_sql_and_params(update_props: dict,
         params.append(v)
     if constraint_props:
         for k, v in constraint_props.items():
-            where_str += f'{k}=%s and ' if db_type == DBType.mysql else f'{k}=:{k} and '
+            where_str += f'{k}=%s and ' if db_type == DBType.mysql else f'dbms_lob.substr({k})=:{k} and ' if meta.get(
+                k.upper(),
+                None) == 'CLOB' else f'{k}=:{k} and '
             params.append(v)
         where_str = 'where ' + where_str.strip().strip('and')
     set_str = set_str.strip(',')
@@ -96,7 +171,10 @@ def insert_to_db(cursor, props_dict: dict, target_table: str, db_type: DBType = 
     :return:
     """
     sql, params = create_insert_sql_and_params(props_dict, target_table, db_type)
-    cursor.execute(sql, params)
+    try:
+        cursor.execute(sql, params)
+    except Exception as e:
+        raise_exception(e)
 
 
 def update_to_db(cursor,
@@ -113,8 +191,62 @@ def update_to_db(cursor,
     :param db_type: 数据库类型(mysql或oracle)
     :return:
     """
-    sql, params = create_update_sql_and_params(update_props, constraint_props, target_table, db_type)
-    cursor.execute(sql, params)
+    sql, params = create_update_sql_and_params(cursor, update_props, constraint_props, target_table, db_type)
+    try:
+        cursor.execute(sql, params)
+    except Exception as e:
+        raise_exception(e)
+
+
+def select_from_db(cursor,
+                   target_table: str,
+                   columns: list,
+                   where_dict: dict = None,
+                   order_by: dict = None,
+                   db_type: DBType = DB_ENV):
+    """
+    从数据库中查询在指定条件下的指定字段
+    :param cursor: 操作数据库的cursor对象
+    :param target_table: 目标表
+    :param columns: 需要查询的列明
+    :param where_dict: where约束条件的dict
+    :param order_by: 需要排序的字段,如,{'name':'desc','id':'asc'}
+    :param db_type: 数据库类型(oracle或mysql)
+    :return:
+    """
+    meta = __select_table_meta(cursor, target_table)
+    where_condition = ''
+    params = []
+    if where_dict is not None and len(where_dict) != 0:
+        # 转为列表 固定顺序
+        where_items = list(where_dict.items())
+        # 从列表中取出参数的值
+        params = [v for k, v in where_items]
+        # 构建where条件
+        where_condition = ' and '.join(
+            [f'{"dbms_lob.substr(" + k + ")" if meta.get(k.upper(), None) == "CLOB" else k} = :{k}' for k, v in
+             where_items]) if db_type == DBType.oracle else ' and '.join(
+            [f'{k} = %s' for k, v in where_items])
+        where_condition = ' where ' + where_condition
+    order_by_condition = ''
+    if order_by is not None and len(order_by) != 0:
+        # 转为列表 固定顺序
+        order_by_items = list(order_by.items())
+        # 构建order_by条件
+        order_by_condition = ','.join([f'{k} {v}' for k, v in order_by_items])
+        order_by_condition = ' order by ' + order_by_condition
+
+    sql = f"""
+        select 
+        {','.join(["dbms_lob.substr(" + str(col) + ")" if meta.get(str(col).upper(),None) == 'CLOB' else str(col) for col in columns])} 
+        from {target_table} 
+        {where_condition}
+        {order_by_condition}
+    """
+    if params:
+        cursor.execute(sql, params)
+    else:
+        cursor.execute(sql)
 
 
 def get_conn_mysql(host=mysql_host, user=mysql_user, password=mysql_password, database=mysql_database):

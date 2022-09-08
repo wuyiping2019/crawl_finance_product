@@ -47,8 +47,8 @@ def parse_page_json(page_json):
             'qgje': str(prdInfo['pfirstAmt']) + '元',  # 起购金额
             'fxdj': prdInfo['riskLevelName'],  # 风险等级
             'cpqx': prdInfo['livTimeUnitName'],  # 产品期限
-            'ipo_kssj': prdInfo['ipoStartDate'],  # ipo开始时间
-            'ipo_jssj': prdInfo['ipoEndDate'],  # ipo结束时间
+            'mjqsrq': prdInfo['ipoStartDate'],  # ipo开始时间
+            'mjjsrq': prdInfo['ipoEndDate'],  # ipo结束时间
             'cped': prdInfo['totAmt'],  # 产品总额度
             'yjbjjz': '%.2f' % (prdInfo['benchMarkMin'] * 100) + '%~' + '%.2f' % (prdInfo['benchMarkMax'] * 100) if
             incomInfo['incomeTitle'] == '业绩比较基准' else '',  # 业绩比较基准
@@ -83,7 +83,7 @@ class SpiderFlowImpl(SpiderFlow):
         try:
             driver = get_driver()
             driver.get(REQUEST_URL)
-            with open(file='exec.js', mode='r', encoding='utf-8') as f:
+            with open(file='exec_pc.js', mode='r', encoding='utf-8') as f:
                 js = f.read()
             driver.execute_script(js)
             pages = get_pages(driver)
