@@ -13,8 +13,12 @@ from xyyh_config import PC_BHLCCP_REQUEST, SLEEP_SECOND
 # https://www.cib.com.cn/cn/personal/wealth-management/xxcx/table/
 def process_xyyh_pc(session: Session):
     # 本行理财产品
-    bhlccp_response = session.request(method=PC_BHLCCP_REQUEST['method'], headers=PC_BHLCCP_REQUEST['headers'],
-                                      json=PC_BHLCCP_REQUEST['data'], url=PC_BHLCCP_REQUEST['url'])
+    bhlccp_response = session.request(
+        method=PC_BHLCCP_REQUEST['method'],
+        headers=PC_BHLCCP_REQUEST['headers'],
+        json=PC_BHLCCP_REQUEST['data'],
+        url=PC_BHLCCP_REQUEST['url']
+    )
     time.sleep(SLEEP_SECOND)
     bhlccp_resp_str = bhlccp_response.text.encode(bhlccp_response.encoding).decode(
         'utf-8') if bhlccp_response.encoding else bhlccp_response.text
