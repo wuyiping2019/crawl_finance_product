@@ -11,10 +11,6 @@ from zggdyh_yqsy import process_yqsy_type
 from zggdyh_config import TARGET_TABLE_PROCESSED, STR_TYPE, NUMBER_TYPE, SEQUENCE_NAME, TRIGGER_NAME, LOG_NAME
 
 
-def process_row(cursor, row: dict, log_id: int, cpbm: str):
-    pass
-
-
 class SpiderFlowImpl(SpiderFlow):
     def callback(self, conn, cursor, session: Session, log_id: int, **kwargs):
         yqsy_rows = process_yqsy_type(session)

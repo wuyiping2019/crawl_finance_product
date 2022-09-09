@@ -28,3 +28,11 @@ def transform_rows(origin_rows: list, key_mappings: dict, callbacks: dict, ignor
             row.update(extra_attrs)
         rows.append(row)
     return rows
+
+
+def delete_empty_value(kv: dict):
+    keys = [key for key in kv.keys()]
+    for key in keys:
+        if not kv[key]:
+            del kv[key]
+    return kv

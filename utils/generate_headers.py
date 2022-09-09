@@ -3,19 +3,23 @@ import json
 from utils.string_utils import remove_space
 
 headers_str = """
-Accept: application/json, text/javascript, */*; q=0.01
-Accept-Encoding: gzip, deflate
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Accept-Encoding: gzip, deflate, br
 Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 Cache-Control: no-cache
-Content-Length: 261
-Content-Type: application/json;charset=UTF-8
-Host: www.cmbc.com.cn
-Origin: http://www.cmbc.com.cn
+Connection: keep-alive
+Host: www.cib.com.cn
 Pragma: no-cache
-Proxy-Connection: keep-alive
-Referer: http://www.cmbc.com.cn/xmhpd/grkh/rmcp/rmlc/index.htm
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36
-X-Requested-With: XMLHttpRequest
+Referer: https://www.cib.com.cn/cn/personal/wealth-management/xxcx/pfund.html
+sec-ch-ua: "Google Chrome";v="95", "Chromium";v="95", ";Not A Brand";v="99"
+sec-ch-ua-mobile: ?1
+sec-ch-ua-platform: "Android"
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Mobile Safari/537.36
 """
 splits = headers_str.split('\n')
 headers_dict = {}
