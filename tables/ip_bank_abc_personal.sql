@@ -12,17 +12,27 @@ CREATE TABLE ip_bank_abc_personal
     yjbjjz                      varchar2(1000),
     qgje                        varchar2(1000),
     xsqy                        varchar2(1000),
-    xsqx                        varchar2(1000),
+    fsjzrq                        varchar2(1000),
+    fsqsrq                        varchar2(1000),
     PrdYildTypeOrder            varchar2(1000),
     cpbm                        varchar2(1000),
     cpmc                        varchar2(1000),
     fxjg                        varchar2(1000),
+    dzje                        varchar2(1000),
+    mjfs                        varchar2(1000),
+    dqr                        varchar2(1000),
+    qxr                        varchar2(1000),
+    mjbz                        varchar2(1000),
+    tzxz                        varchar2(1000),
+    fxdj                        varchar2(1000),
+    tzqx                        varchar2(1000),
+    zxrgdw                        varchar2(1000),
     yjjzIntro                   varchar2(1000),
     szComDat                    varchar2(1000),
     createTime                  varchar2(100)
 );
 -- 创建日志表的序列（用于主键自增）
---drop sequence seq_abc;
+drop sequence seq_abc;
 create sequence seq_abc
     minvalue 1
     maxvalue 99999999
