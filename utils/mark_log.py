@@ -2,7 +2,7 @@ import datetime
 
 from pymysql.cursors import Cursor
 from global_config import LOG_TABLE
-from db_utils import createInsertSql
+from db_utils import createInsertSql, update_to_db
 
 
 def getLocalDate():
@@ -97,7 +97,11 @@ def mark_success_log(count: str, endDate: str, generated_log_id: int, cursor):
         "result": "成功",
         "detail": "成功"
     }
-    updateLogToDB(cur=cursor, log_id=generated_log_id, properties=success_log)
+    update_to_db(cursor=cursor,
+                 update_props=success_log,
+                 constraint_props={'id': generated_log_id},
+                 target_table=LOG_TABLE)
+    # updateLogToDB(cur=cursor, log_id=generated_log_id, properties=success_log)
     cursor.connection.commit()
 
 
@@ -118,7 +122,11 @@ def mark_failure_log(e: Exception, endDate: str, generated_log_id: int, cursor, 
         "result": "失败",
         "detail": str(e)
     }
-    updateLogToDB(cur=cursor, log_id=generated_log_id, properties=log_info)
+    update_to_db(cursor=cursor,
+                 update_props=log_info,
+                 constraint_props={'id': generated_log_id},
+                 target_table=LOG_TABLE)
+    # updateLogToDB(cur=cursor, log_id=generated_log_id, properties=log_info)
     cursor.connection.commit()
 
 

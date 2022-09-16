@@ -5,7 +5,7 @@ import requests
 from cx_Oracle import Connection
 from requests import Session
 
-from utils.db_utils import get_conn_oracle, close
+from utils.db_utils import get_conn_oracle, close, update_to_db
 from utils.global_config import DB_ENV, init_oracle
 from utils.mark_log import mark_start_log, mark_failure_log, getLocalDate, get_generated_log_id, mark_success_log, \
     get_write_count
@@ -76,10 +76,6 @@ if __name__ == '__main__':
     """
     测试
     """
-
-
     def test(a, b, c):
         return a + b + c
-
-
     process_flow(log_name='1', callback=test, a=2, b=2, c=2)

@@ -41,7 +41,6 @@ FIELD_MAPPINGS = {
     '历史净值': 'lsjz',
     '赎回规则':'shgz',
     '投资期限':'tzqx'
-
 }
 
 

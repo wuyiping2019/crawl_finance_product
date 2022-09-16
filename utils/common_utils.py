@@ -1,3 +1,6 @@
+import re
+
+
 def transform_rows(origin_rows: list, key_mappings: dict, callbacks: dict, ignore_attrs: list, extra_attrs: dict):
     """
 
@@ -31,8 +34,35 @@ def transform_rows(origin_rows: list, key_mappings: dict, callbacks: dict, ignor
 
 
 def delete_empty_value(kv: dict):
+    """
+    删除一个字典中value为空的key
+    :param kv:
+    :return:
+    """
     keys = [key for key in kv.keys()]
     for key in keys:
         if not kv[key]:
             del kv[key]
-    return kv
+
+
+def extract_bracket_content(info_str):
+    pattern = re.compile(r'[{](.*)[}]', re.S)
+    findall = re.findall(pattern, info_str)
+    if findall:
+        return findall[0]
+    else:
+        return ''
+
+
+def extract_content_between_content(info_str, left_info, right_info):
+    pattern = re.compile(r'%s(.+?)%s' % (left_info, right_info))
+    findall = re.findall(pattern, info_str)
+    if findall:
+        return findall[0].replace(left_info, '').replace(right_info, '')
+    else:
+        return ''
+
+
+if __name__ == '__main__':
+    content = extract_content_between_content('根据华夏理财产品风险评级，本产品为 PR2级（中低风险） 理财产品。', '本产品为', '理财产品')
+    print(content)

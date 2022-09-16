@@ -1,8 +1,7 @@
 import json
-from enum import Enum
-
 import cx_Oracle
-from cx_Oracle import DatabaseError
+from selenium.common import NoSuchElementException
+from utils.common_utils import extract_bracket_content
 
 
 def raise_exception(error, **kwargs):
@@ -20,7 +19,10 @@ def raise_exception(error, **kwargs):
     elif isinstance(error, KeyError):
         error_key = error.args[0]
         raise CustomException(3, f'字典不存在"{error_key}"的key值')
-    # 字典无法获取某个key值
+    # driver.find_element无法找到目标元素时报错
+    elif isinstance(error, NoSuchElementException):
+        content = extract_bracket_content(error.args[0])
+        raise CustomException(5, f'无法定位到元素{content}')
     else:
         raise error
 

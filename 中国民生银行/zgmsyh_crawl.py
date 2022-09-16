@@ -13,7 +13,7 @@ class SpiderFlowImpl(SpiderFlow):
     def callback(self, conn, cursor, session: Session, log_id: int, **kwargs):
         pc_rows = process_zgmsyh_pc(session)
         mobile_rows = process_zgmsyh_mobile(session)
-        rows = pc_rows + mobile_rows
+        rows = pc_rows if pc_rows else [] + mobile_rows if mobile_rows else []
         # 检查表是否存在
         flag = check_table_exists(TARGET_TABLE_PROCESSED, cursor)
         if not flag:

@@ -104,7 +104,7 @@ def process_zgmsyh_mobile(session):
                     FIELD_MAPPINGS['风险等级']: prd.get('riskLevelName', '')
                 }
                 keys = [str(key) for key in row.keys()]
-                row = delete_empty_value(row)
+                row = delete_empty_value(row) if not delete_empty_value(row) else {}
                 # 处理详情页
                 detail_url = 'https://ment.cmbc.com.cn/gw/pwx_wx/QueryPrdBuyInfo.do'
                 detail_headers = {
@@ -168,6 +168,10 @@ def process_zgmsyh_mobile(session):
                 }
                 # 删除detail_row中value为空的key
                 delete_empty_value(detail_row)
+                if not row:
+                    row = {}
+                if not detail_row:
+                    detail_row = {}
                 row.update(detail_row)
                 # 处理 detail_loads中的链接
                 url_row = {}
@@ -191,6 +195,8 @@ def process_zgmsyh_mobile(session):
                         }).encode().decode('unicode_escape') if detail_url.get('filePath', '') != '' and detail_url.get(
                             'fileTitle', '') != '' else ''
                 delete_empty_value(url_row)
+                if not url_row:
+                    url_row = {}
                 row.update(url_row)
                 # 获取历史净值
                 lsjz_url = 'https://ment.cmbc.com.cn/gw/pwx_wx/QryFinancingLineTotalData.do'
@@ -232,6 +238,8 @@ def process_zgmsyh_mobile(session):
                 # 更新历史净值到数据到row上
                 if lsjz_row['lsjz']:
                     lsjz_row['lsjz'] = json.dumps(lsjz_row['lsjz']).encode().decode('unicode_escape')
+                    if not lsjz_row:
+                        lsjz_row = {}
                     row.update(lsjz_row)
 
                 # 处理剩余额度
@@ -260,6 +268,8 @@ def process_zgmsyh_mobile(session):
                 except Exception as e:
                     print(f'无法获取{row["cpbm"]}的剩余额度')
                 delete_empty_value(syed_row)
+                if not syed_row:
+                    syed_row = {}
                 row.update(syed_row)
                 print(row)
                 rows.append(row)

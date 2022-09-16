@@ -1,28 +1,19 @@
 from requests import Session
 
 from utils.custom_exception import cast_exception, CustomException
-from utils.db_utils import update_else_insert_to_db, check_table_exists, create_table, add_fields, close
+from utils.db_utils import update_else_insert_to_db, check_table_exists, create_table, add_fields
 from utils.mark_log import getLocalDate
 from utils.spider_flow import SpiderFlow, process_flow
-from xyyh_mobile import process_xyyh_prd_list
-from xyyh_pc import process_xyyh_pc
-from xyyh_config import TARGET_TABLE_PROCESSED, STR_TYPE, NUMBER_TYPE, SEQUENCE_NAME, TRIGGER_NAME, LOG_NAME
+from hxyh_mobile import process_hxyh_mobile
+from hxyh_pc import process_hxyh_pc
+from hxyh_config import TARGET_TABLE_PROCESSED, STR_TYPE, NUMBER_TYPE, SEQUENCE_NAME, TRIGGER_NAME, LOG_NAME
 
 
 class SpiderFlowImpl(SpiderFlow):
     def callback(self, conn, cursor, session: Session, log_id: int, **kwargs):
-        pc_rows = process_xyyh_pc(session)
-        mobile_rows = []
-        driver = None
-        try:
-            driver, rows = process_xyyh_prd_list()
-        except Exception as e:
-            raise e
-        finally:
-            close(driver)
-            if driver:
-                driver.quit()
-        rows = pc_rows + mobile_rows
+        pc_rows = process_hxyh_pc(session)
+        mobile_rows = process_hxyh_mobile(session)
+        rows = pc_rows if pc_rows else [] + mobile_rows if mobile_rows else []
         # 检查表是否存在
         flag = check_table_exists(TARGET_TABLE_PROCESSED, cursor)
         if not flag:
