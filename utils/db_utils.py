@@ -1,7 +1,8 @@
 import sys
 from typing import List, Any
-
 import pymysql
+from dbutils.pooled_db import PooledDB
+import cx_Oracle
 from global_config import init_oracle, DBType
 from global_config import mysql_database, mysql_password, mysql_user, mysql_autocommit, mysql_host
 from global_config import oracle_user, oracle_password, oracle_uri
@@ -21,8 +22,45 @@ __all__ = [
     'insert_to_db',
     'update_to_db',
     'update_else_insert_to_db',
-    'add_fields'
+    'add_fields',
+    'get_db_poll'
 ]
+
+
+class DBException(Exception):
+    def __init__(self, code, msg):
+        self.code = code
+        self.msg = msg
+
+
+def get_db_poll(db_type: DBType = DB_ENV) -> PooledDB:
+    """
+    创建数据库连接池
+    :param db_type:
+    :return:
+    """
+    if db_type.name == DBType.mysql.name:
+        return PooledDB(pymysql,
+                        mincached=20,
+                        blocking=True,
+                        host=mysql_host,
+                        user=mysql_user,
+                        passwd=mysql_password,
+                        port=3306,
+                        db=mysql_database,
+                        connect_timeout=5,
+                        charset='utf8'
+                        )
+    elif db_type.name == DBType.oracle.name:
+        init_oracle()
+        return PooledDB(cx_Oracle,
+                        mincached=20,
+                        blocking=True,
+                        user=oracle_user,
+                        password=oracle_password,
+                        dsn=oracle_uri)
+    else:
+        return None
 
 
 def createInsertSql(properties: dict, db_type: DBType = DB_ENV):
@@ -45,14 +83,15 @@ def createInsertSql(properties: dict, db_type: DBType = DB_ENV):
     return fields, values
 
 
-def update_else_insert_to_db(cursor,
-                             target_table: str,
-                             props_dict: dict,
-                             check_props: dict,
-                             db_type: DBType = DB_ENV):
+def update_else_insert_to_db(
+        cursor,
+        target_table: str,
+        props_dict: dict,
+        check_props: dict,
+        db_type: DBType = DB_ENV):
     """
     使用的where约束条件对数据执行更新操作,如果不存在则执行插入操作
-    :param cursor: 操作数据库的cursor对象
+    :param cursor:
     :param target_table:目标表
     :param props_dict: 一条数据的dict
     :param check_props: 判断该条数据是否存在的约束条件
@@ -64,12 +103,11 @@ def update_else_insert_to_db(cursor,
     rs = cursor.fetchone()
     if rs is None or rs[0] is None:
         # 表示不存在 执行插入操作
-        insert_to_db(cursor, props_dict, target_table)
+        insert_to_db(cursor, props_dict, target_table, db_type)
         # cursor.connection.commit()
     else:
         # 表示存在该数据 执行更新操作
-        update_to_db(cursor, props_dict, check_props, target_table)
-        # cursor.connection.commit()
+        update_to_db(cursor, props_dict, check_props, target_table, db_type)
 
 
 def add_fields(cursor, target_table: str, fields: list, filed_type: str):
@@ -84,7 +122,6 @@ def add_fields(cursor, target_table: str, fields: list, filed_type: str):
     for field in fields:
         if not check_field_exists(field, target_table, cursor):
             add_field(field, filed_type, target_table, cursor)
-    cursor.close()
 
 
 def create_insert_sql_and_params(props_dict: dict, target_table: str, db_type: DBType = DB_ENV):
@@ -177,11 +214,12 @@ def insert_to_db(cursor, props_dict: dict, target_table: str, db_type: DBType = 
         raise_exception(e)
 
 
-def update_to_db(cursor,
-                 update_props: dict,
-                 constraint_props: dict,
-                 target_table: str,
-                 db_type: DBType = DB_ENV):
+def update_to_db(
+        cursor,
+        update_props: dict,
+        constraint_props: dict,
+        target_table: str,
+        db_type: DBType = DB_ENV):
     """
     根据传入的需要更新的字段和约束条件进行更新
     :param cursor:
@@ -238,7 +276,7 @@ def select_from_db(cursor,
 
     sql = f"""
         select 
-        {','.join(["dbms_lob.substr(" + str(col) + ")" if meta.get(str(col).upper(),None) == 'CLOB' else str(col) for col in columns])} 
+        {','.join(["dbms_lob.substr(" + str(col) + ")" if meta.get(str(col).upper(), None) == 'CLOB' else str(col) for col in columns])} 
         from {target_table} 
         {where_condition}
         {order_by_condition}
@@ -280,10 +318,12 @@ def get_conn(db_type: DBType = DB_ENV):
     :param db_type: 数据库类型(mysql或oracle)
     :return:
     """
-    if db_type == DBType.mysql:
+    if db_type.name == DBType.mysql.name:
         return get_conn_mysql()
-    if db_type == DBType.oracle:
+    elif db_type.name == DBType.oracle.name:
         return get_conn_oracle()
+    else:
+        raise DBException(None, '无法获取数据库连接对象')
 
 
 def close(objs: list):
@@ -419,7 +459,7 @@ def check_table_exists(table_name, cursor):
         cursor.fetchall()
         return True
     except Exception as e:
-        return False
+        raise DBException(None, f'db_utils:check_table_exists\n创建表失败\n{str(e)}')
 
 
 def process_dict(data_dict: dict):

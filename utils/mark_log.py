@@ -93,6 +93,7 @@ def mark_success_log(count: str, endDate: str, generated_log_id: int, cursor):
     success_log = {
         "status": "完成",
         "endDate": getLocalDate(),
+        'updateTime': getLocalDate(),
         "count": count,
         "result": "成功",
         "detail": "成功"
@@ -118,6 +119,7 @@ def mark_failure_log(e: Exception, endDate: str, generated_log_id: int, cursor, 
     log_info = {
         "status": "完成",
         "endDate": endDate,
+        'updateTime': getLocalDate(),
         "count": count,
         "result": "失败",
         "detail": str(e)

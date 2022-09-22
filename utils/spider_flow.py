@@ -5,7 +5,7 @@ import requests
 from cx_Oracle import Connection
 from requests import Session
 
-from utils.db_utils import get_conn_oracle, close, update_to_db
+from utils.db_utils import get_conn_oracle, close, update_to_db, get_conn
 from utils.global_config import DB_ENV, init_oracle
 from utils.mark_log import mark_start_log, mark_failure_log, getLocalDate, get_generated_log_id, mark_success_log, \
     get_write_count
@@ -35,7 +35,7 @@ def process_flow(log_name, target_table, callback, **kwargs):
     session = None
     generated_log_id = None
     try:
-        conn = get_conn_oracle()
+        conn = get_conn()
         cursor = conn.cursor()
         session = requests.session()
         # 记录开始日志
@@ -59,6 +59,8 @@ def process_flow(log_name, target_table, callback, **kwargs):
         count = get_write_count(target_table, generated_log_id, cursor)
         # 记录成功日志
         mark_success_log(count, getLocalDate(), generated_log_id, cursor)
+        # 提交事务
+        conn.commit()
     except Exception as e:
         # 记录失败日志
         if generated_log_id:

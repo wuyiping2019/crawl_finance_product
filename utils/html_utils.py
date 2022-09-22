@@ -23,6 +23,8 @@ def parse_table(table: Tag, col_names: list, callbacks: dict, extra_attrs: dict,
     :param table:
     :param col_names:
     :param callbacks: 回调函数 对value进行进一步的处理
+    :param extra_attrs:
+    :param head_tag
     :return:
     """
     table_head = table.select('tr')[0]

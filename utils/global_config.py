@@ -36,3 +36,15 @@ def get_field_type():
         return oracle_str_type, oracle_number_type
     if DB_ENV == DBType.mysql:
         return mysql_str_type, mysql_number_type
+
+
+def get_table_name(mask: str):
+    return f'ip_bank_{mask}_processed'
+
+
+def get_trigger_name(mask: str):
+    return f'trigger_{mask}'
+
+
+def get_sequence_name(mask: str):
+    return f'seq_{mask}'

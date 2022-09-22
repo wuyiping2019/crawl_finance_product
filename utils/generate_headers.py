@@ -3,19 +3,18 @@ import json
 from utils.string_utils import remove_space
 
 headers_str = """
-host: ebank.pingan.com.cn
-content-length: 99
-user-agent: Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36
-content-type: application/x-www-form-urlencoded;charset=utf-8
-accept: */*
-origin: https://ebank.pingan.com.cn
+host: wap.cgbchina.com.cn
+accept: application/json, text/plain, */*
+origin: https://wap.cgbchina.com.cn
+sendersn: 1663823532558n1005981
+user-agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36 NetType/WIFI MicroMessenger/7.0.20.1781(0x6700143B) WindowsWechat(0x6307062c)
+content-type: application/json;charset=UTF-8
 sec-fetch-site: same-origin
 sec-fetch-mode: cors
 sec-fetch-dest: empty
-referer: https://ebank.pingan.com.cn/aum/common/sales_list/index.html?initPage=true
+referer: https://wap.cgbchina.com.cn/h5-mobilebank-web/h5/investment/self/detail_repeat_1663817605945?srcChannel=WX&HMBA_STACK_HASH=1663748433050&prdCode=XFTLCY0601ZSA&mainChannel=400&secondaryChannel=WX&ecifNum=&sourceActivityId=&cusmanagerId=&srcEcifNum=&accOpenNode=&channel=400&sChannel=MB&isRegistCS=1&faceFlag=LS&trade_BranchNo=&loginType=app&signType=&guideBanner=
 accept-encoding: gzip, deflate, br
-accept-language: zh-CN,zh;q=0.9
-cookie: WEBTRENDS_ID=2143a2a868e936ec8091661310781821; fp_ver=4.7.9; BSFIT4_OkLJUJ=FHmbEvCoJgJ6uovdqduWl0zvJ-a6UMZB; WT-FPC=id=2143a2a868e936ec8091661310781821:lv=1661757231769:ss=1661757218522:fs=1661310781821:pn=7:vn=3; BSFIT4_EXPIRATION=1661838937956; BSFIT4_DEVICEID=g8FY5G6z6QRgNFkhFvHyTgPLPOb8g_bEKOL0ckxrplveiPqIA6pG71I2aNM2OGY1c6sdB54fi7hxSKxLqmrbPkhxfdqEdMcDeQsVfjAahc_kzC7yJASKkAGIt5viwrKM92jhNOx1yb-deWCc_LfNefay98HrSTRo
+accept-language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7
 """
 splits = headers_str.split('\n')
 headers_dict = {}

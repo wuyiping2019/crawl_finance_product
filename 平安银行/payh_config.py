@@ -1,86 +1,132 @@
-from enum import Enum
+from typing import Dict, List
+
+from requests import Session
 
 from utils.common_utils import delete_empty_value
-from utils.custom_exception import CustomException
 from utils.mappings import FIELD_MAPPINGS
 
-# 缺失编码记录
-MISSING_CODE_SAMPLE_COUNT = 3
+
+class CrawlRequestException(Exception):
+    def __init__(self, code, msg):
+        self.code = code
+        self.msg = msg
 
 
-class CrawlRequestParams(Enum):
-    data = 'data'
-    json = 'json'
-    params = 'params'
-    url = 'url'
-    headers = 'headers'
-    method = 'method'
+class CrawlRequest:
+    def __init__(self,
+                 method,
+                 url,
+                 params=None,
+                 data=None,
+                 json=None,
+                 headers=None,
+                 missing_code_sample=3,
+                 **kwargs):
+        self.request = self.do_init(method, url, params, data, json, headers, **kwargs)
+        self.mark_code_mapping = {}
+        self.missing_code_sample = missing_code_sample
 
+    def do_crawl(self,
+                 session: Session,
+                 to_rows: callable,
+                 func: Dict[str, callable],
+                 mapping_dicts: Dict[str, Dict[str, str]],
+                 transformed_keys: Dict[str, str]
+                 ):
+        response = session.request(**self.request)
+        rows: List[dict] = to_rows(response)
+        processed_rows = []
+        for row in rows:
+            processed_row = self.do_row_mapping(row, func, mapping_dicts, transformed_keys)
+            if processed_row:
+                processed_rows.append(processed_row)
+        return processed_rows
 
-class CrawlConfig:
-    def __init__(self, requests, row_mapping_config, missing_code_sample_count=None, missing_code_log=None):
-        """
-        :param requests: 保存请求参数
-        :param row_mapping_config: 保存映射配置
-        :param missing_code_sample_count: 配置需要保存映射配置缺失样本数据条数
-        :param missing_code_log: 保存映射配置确实的缺失记录
-        """
-        self.requests = requests
-        self.row_mapping_config = row_mapping_config
-        self.missing_code_sample_count = missing_code_sample_count if missing_code_sample_count is None else 3
-        self.missing_code_log = missing_code_log if missing_code_log is None else {}
-
-    def get_request(self, key, **kwargs) -> dict:
-        request = self.requests[key]
-        params = request.get(CrawlRequestParams.params)
-        data = request.get(CrawlRequestParams.data)
-        json = request.get(CrawlRequestParams.json)
-        headers = request.get(CrawlRequestParams.headers)
-        url = request.get(CrawlRequestParams.url)
-        method = request.get(CrawlRequestParams.method)
-        request = {
+    @staticmethod
+    def do_init(method, url, params=None, data=None, json=None, headers=None, **kwargs):
+        request_params = {
+            'method': method,
+            'url': url,
             'params': params,
             'data': data,
             'json': json,
-            'headers': headers,
-            'url': url,
-            'method': method
+            'headers': headers
         }
         for k, v in kwargs.items():
-            request[k] = v
-        delete_empty_value(request)
-        return request
+            if k:
+                request_params[k] = v
+        # 删除空key/value
+        delete_empty_value(request_params)
+        return request_params
 
-    def __row_mapping(self):
+    def do_row_mapping(self,
+                       row: dict,
+                       func: Dict[str, callable],
+                       mapping_dicts: Dict[str, Dict[str, str]],
+                       transformed_keys: Dict[str, str],
+                       ) -> dict:
+        processed_row = {}
+        for k, v in row.items():
+            temp_dict = self.__field_mapping(row, k, func.get(k, None),
+                                             mapping_dicts.get(k, None),
+                                             transformed_keys.get(k, None))
+            processed_row.update(temp_dict)
+        delete_empty_value(processed_row)
+        return processed_row
 
-    # decode_field_coding(row, '理财子', 'saleStatus')
-    def decode_field_coding(self, row: dict, row_mapping_config_key: str, code_prop: str):
+    def __field_mapping(self,
+                        row: dict,
+                        row_field: str,
+                        func: callable = None,
+                        mapping_dict: Dict[str, str] = None,
+                        transformed_key: str = None) -> dict:
         """
-        :param row: 获取的原始数据 是一个dict
-        :param row_mapping_config_key: row_mapping_config中的key
-        :param code_prop: row中编码的属性
-        :return:
+        对一个key/value进行转换
+        返回单个键值对的字典
+        :param row: 爬取的原始字典数据
+        :param row_field: 需要转换的字段
+        :param func: 转换字典使用的函数
+        :param mapping_dict: 转换字典需要使用的映射字典
+        :param transformed_key: 转换之后使用的FIELD_MAPPINGS中的key值
+        :return: 返回单个键值对的dict
         """
-        # 某一个请求的映射字段 如理财子
-        mapping: dict = ROW_MAPPING_COFNIG[row_mapping_config_key]
-        # 某一个属性的映射 如saleStatus
-        code_mapping: dict = mapping[code_prop]
-        # 从原始数据中获取的编码数据
-        code = row.get(code_prop, '')
-        # 如果配置的编码映射中不存在该code
-        if code not in code_mapping.keys():
-            if row_mapping_config_key not in self.missing_code_log.keys():
-                self.missing_code_log[row_mapping_config_key] = {}
-            if code_prop not in self.missing_code_log[row_mapping_config_key].keys():
-                self.missing_code_log[row_mapping_config_key][code_prop] = {}
-            if code not in self.missing_code_log[row_mapping_config_key][code_prop].keys():
-                self.missing_code_log[row_mapping_config_key][code_prop][code] = []
-            else:
-                if len(self.missing_code_log[row_mapping_config_key][code_prop][code]) <= MISSING_CODE_SAMPLE_COUNT:
-                    self.missing_code_log[row_mapping_config_key][code_prop][code].append(row)
-            return code
+        if row_field not in row.keys():
+            raise CrawlRequestException(None, f'__field_mapping:(传入的row:{row}中不存在row_field:{row_field}的key值)')
+        if transformed_key not in FIELD_MAPPINGS.keys():
+            raise CrawlRequestException(None,
+                                        f'__field_mapping:(transformed_key:{transformed_key}必须存在于FIELD_MAPPINGS:{FIELD_MAPPINGS.keys()}中)')
+
+        value = row[row_field]
+        # 对value进行转换
+        if callable:
+            return {
+                FIELD_MAPPINGS[transformed_key]: func(value)
+            }
+
+        if mapping_dict and transformed_key:
+            if transformed_key not in FIELD_MAPPINGS.keys():
+                raise CrawlRequestException(None,
+                                            f'__field_mapping:(传入的transformed_key:{transformed_key}中不存在FIELD_MAPPINGS:{FIELD_MAPPINGS}的key值)')
+            # 需要记录日志 表示没有配置映射
+            if value not in mapping_dict:
+                if row_field not in self.mark_code_mapping:
+                    self.mark_code_mapping[row_field] = {}
+                if value not in self.mark_code_mapping[row_field]:
+                    self.mark_code_mapping[row_field][value] = []
+                if len(self.mark_code_mapping[row_field][value]) <= self.missing_code_sample:
+                    self.mark_code_mapping[row_field][value].append(row)
+            return {
+                FIELD_MAPPINGS[transformed_key]: mapping_dict.get(value, None)
+            }
+        elif transformed_key:
+            return {
+                FIELD_MAPPINGS[transformed_key]: value
+            }
         else:
-            return code_mapping[code]
+            raise CrawlRequestException(None,
+                                        f'__field_mapping:(传入的mapping_dict:(字段映射func参数和transformed_key参数)')
+
+
 PAYH_PC_REQUEST = {
     '银行理财':
         {
@@ -235,16 +281,6 @@ PAYH_PC_REQUEST = {
             "accept-language": "zh-CN,zh;q=0.9",
             "cookie": "WEBTRENDS_ID=2143a2a868e936ec8091661310781821; fp_ver=4.7.9; BSFIT4_OkLJUJ=FHmbEvCoJgJ6uovdqduWl0zvJ-a6UMZB; WT-FPC=id=2143a2a868e936ec8091661310781821lv=1661757231769ss=1661757218522fs=1661310781821pn=7vn=3; BSFIT4_EXPIRATION=1661838937956; BSFIT4_DEVICEID=g8FY5G6z6QRgNFkhFvHyTgPLPOb8g_bEKOL0ckxrplveiPqIA6pG71I2aNM2OGY1c6sdB54fi7hxSKxLqmrbPkhxfdqEdMcDeQsVfjAahc_kzC7yJASKkAGIt5viwrKM92jhNOx1yb-deWCc_LfNefay98HrSTRo"
         },
-        'row_mapping': lambda row: {
-            FIELD_MAPPINGS['起购金额']: row.get('minAmount', '') + '元',
-            FIELD_MAPPINGS['收益类型']: ROW_MAPPING_COFNIG['个人结构性存款']['rateType'][
-                row.get('rateType', '')],
-            FIELD_MAPPINGS['风险等级']: ROW_MAPPING_COFNIG['个人结构性存款']['riskLevel'][row.get('riskLevel', '')],
-            FIELD_MAPPINGS['产品名称']: row.get('prdName', ''),
-            FIELD_MAPPINGS['产品状态']: ROW_MAPPING_COFNIG['个人结构性存款']['saleStatus'][row.get('saleStatus', '')],
-            'mobile_url': row.get('prdDetailUrl', ''),
-            FIELD_MAPPINGS['产品编码']: row.get('prdCode', ''),
-        },
     },
     '公募基金': {
         'method': 'post',
@@ -272,21 +308,6 @@ PAYH_PC_REQUEST = {
             "accept-encoding": "gzip, deflate, br",
             "accept-language": "zh-CN,zh;q=0.9",
             "cookie": "WEBTRENDS_ID=2143a2a868e936ec8091661310781821; fp_ver=4.7.9; BSFIT4_OkLJUJ=FHmbEvCoJgJ6uovdqduWl0zvJ-a6UMZB; WT-FPC=id=2143a2a868e936ec8091661310781821lv=1661757231769ss=1661757218522fs=1661310781821pn=7vn=3; BSFIT4_EXPIRATION=1661838937956; BSFIT4_DEVICEID=g8FY5G6z6QRgNFkhFvHyTgPLPOb8g_bEKOL0ckxrplveiPqIA6pG71I2aNM2OGY1c6sdB54fi7hxSKxLqmrbPkhxfdqEdMcDeQsVfjAahc_kzC7yJASKkAGIt5viwrKM92jhNOx1yb-deWCc_LfNefay98HrSTRo"
-        },
-        'row_mapping': lambda row: {
-            # FIELD_MAPPINGS['产品编码']:row.get('productSeriesFont',''),
-            FIELD_MAPPINGS['风险等级']: ROW_MAPPING_COFNIG['公募基金']['riskLevel'][row.get('riskLevel', '')],
-            FIELD_MAPPINGS['产品名称']: row.get('prdName', ''),
-            'mobile_url': row.get('prdDetailUrl', ''),
-            FIELD_MAPPINGS['产品编码']: row.get('prdCode', ''),
-            'pc_detail_url': row.get('prdPcDetailUrl', ''),
-            FIELD_MAPPINGS['投资性质']: row.get('prdArrName', ''),
-            FIELD_MAPPINGS['TA编码']: row.get('taCode', ''),
-            FIELD_MAPPINGS['TA名称']: row.get('taName', ''),
-            FIELD_MAPPINGS['募集方式']: ROW_MAPPING_COFNIG['公募基金']['prdType'][row.get('prdType', '')],
-            FIELD_MAPPINGS['管理人']: row.get('prdManager', ''),
-            FIELD_MAPPINGS['产品状态']: ROW_MAPPING_COFNIG['公募基金']['status'][row.get('status', '')]
-
         },
     },
     '理财子': {
@@ -316,21 +337,8 @@ PAYH_PC_REQUEST = {
             "accept-language": "zh-CN,zh;q=0.9",
             "cookie": "WEBTRENDS_ID=2143a2a868e936ec8091661310781821; fp_ver=4.7.9; BSFIT4_OkLJUJ=FHmbEvCoJgJ6uovdqduWl0zvJ-a6UMZB; WT-FPC=id=2143a2a868e936ec8091661310781821lv=1661757231769ss=1661757218522fs=1661310781821pn=7vn=3; BSFIT4_EXPIRATION=1661838937956; BSFIT4_DEVICEID=g8FY5G6z6QRgNFkhFvHyTgPLPOb8g_bEKOL0ckxrplveiPqIA6pG71I2aNM2OGY1c6sdB54fi7hxSKxLqmrbPkhxfdqEdMcDeQsVfjAahc_kzC7yJASKkAGIt5viwrKM92jhNOx1yb-deWCc_LfNefay98HrSTRo"
         },
-        'row_mapping': lambda row: {
-            # FIELD_MAPPINGS['产品编码']:row.get('productSeriesFont',''),
-            FIELD_MAPPINGS['风险等级']: decode_field_coding(row, '理财子', 'riskLevel'),
-            FIELD_MAPPINGS['产品名称']: row.get('prdName', ''),
-            FIELD_MAPPINGS['产品状态']: decode_field_coding(row, '理财子', 'saleStatus'),
-            'mobile_url': row.get('prdDetailUrl', ''),
-            'pc_detail_url': row.get('prdPcDetailUrl', ''),
-            FIELD_MAPPINGS['产品编码']: row.get('prdCode', ''),
-            FIELD_MAPPINGS['TA名称']: row.get('taName', ''),
-            FIELD_MAPPINGS['管理人']: row.get('prdManager', '')
-        },
     },
-
 }
-CrawlConfig()
 
 ROW_MAPPING_COFNIG = {
     '银行理财': {
@@ -416,5 +424,3 @@ ROW_MAPPING_COFNIG = {
         }
     }
 }
-
-
