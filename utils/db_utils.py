@@ -1,4 +1,7 @@
+import datetime
+import json
 import sys
+from logging import Logger
 from typing import List, Any
 import pymysql
 from dbutils.pooled_db import PooledDB
@@ -23,7 +26,8 @@ __all__ = [
     'update_to_db',
     'update_else_insert_to_db',
     'add_fields',
-    'get_db_poll'
+    'get_db_poll',
+    'createInsertSql'
 ]
 
 
@@ -31,6 +35,11 @@ class DBException(Exception):
     def __init__(self, code, msg):
         self.code = code
         self.msg = msg
+
+
+def getLocalDate():
+    now = datetime.datetime.now()
+    return now.strftime("%Y-%m-%d %H:%M:%S")
 
 
 def get_db_poll(db_type: DBType = DB_ENV) -> PooledDB:
@@ -88,9 +97,11 @@ def update_else_insert_to_db(
         target_table: str,
         props_dict: dict,
         check_props: dict,
-        db_type: DBType = DB_ENV):
+        db_type: DBType = DB_ENV,
+        logger: Logger = None):
     """
     使用的where约束条件对数据执行更新操作,如果不存在则执行插入操作
+    :param logger:
     :param cursor:
     :param target_table:目标表
     :param props_dict: 一条数据的dict
@@ -98,16 +109,29 @@ def update_else_insert_to_db(
     :param db_type: 数据库类型(oracle或mysql)
     :return:
     """
+    if logger:
+        logger.info(
+            f"INFO:{getLocalDate()}:db_utils.update_else_insert_to_db开始更新或插入数据{props_dict}")
     # 检查目标的约束条件下是否存在数据
     select_from_db(cursor, target_table, [1], check_props)
     rs = cursor.fetchone()
     if rs is None or rs[0] is None:
         # 表示不存在 执行插入操作
-        insert_to_db(cursor, props_dict, target_table, db_type)
+        if logger:
+            logger.info(
+                f"INFO:{getLocalDate()}:db_utils.update_else_insert_to_db 根据检测条件{check_props}并未查询到数据,执行插入操作")
+        insert_to_db(cursor, props_dict, target_table, db_type, logger)
+        if logger:
+            logger.info(f"INFO:{getLocalDate()}:db_utils.update_else_insert_to_db 插入数据成功")
         # cursor.connection.commit()
     else:
         # 表示存在该数据 执行更新操作
-        update_to_db(cursor, props_dict, check_props, target_table, db_type)
+        if logger:
+            logger.info(
+                f"INFO:{getLocalDate()}:db_utils.update_else_insert_to_db 根据检测条件{json.dumps(check_props)} 查询到数据,执行更新操作")
+        update_to_db(cursor, props_dict, check_props, target_table, db_type, logger)
+        if logger:
+            logger.info(f"INFO:{getLocalDate()}:db_utils.update_else_insert_to_db 更新数据成功")
 
 
 def add_fields(cursor, target_table: str, fields: list, filed_type: str):
@@ -132,7 +156,7 @@ def create_insert_sql_and_params(props_dict: dict, target_table: str, db_type: D
     :param db_type: 数据库类型(mysql或oracle)
     :return: 返回(sql,params)的元组
     """
-    if db_type in (DBType.mysql, DBType.oracle):
+    if db_type.name in (DBType.mysql.name, DBType.oracle.name):
         fields = ''
         values = ''
         params = []
@@ -198,20 +222,30 @@ def create_update_sql_and_params(cursor,
     return sql, tuple(params) if db_type == DBType.mysql else params
 
 
-def insert_to_db(cursor, props_dict: dict, target_table: str, db_type: DBType = DB_ENV):
+def insert_to_db(cursor,
+                 props_dict: dict,
+                 target_table: str,
+                 db_type: DBType = DB_ENV,
+                 logger: Logger = None):
     """
     将字典数据插入到目标表中
     :param cursor:
     :param props_dict: 需要插入的字典数据
     :param target_table: 目标表
     :param db_type: 数据库类型(mysql或oracle)
+    :param logger
     :return:
     """
     sql, params = create_insert_sql_and_params(props_dict, target_table, db_type)
     try:
         cursor.execute(sql, params)
     except Exception as e:
-        raise_exception(e)
+        if logger:
+            logger.error(f"{getLocalDate()}:db_utils.insert_to_db 执行数据插入数据库失败")
+            logger.error(f"{getLocalDate()}:db_utils.insert_to_db sql:{sql}")
+            logger.error(
+                f"{getLocalDate()}:db_utils.insert_to_db params:{json.dumps(params).encode().decode('unicode_escape')}")
+            logger.error(f"{getLocalDate()}:db_utils.insert_to_db {str(e)}")
 
 
 def update_to_db(
@@ -219,7 +253,8 @@ def update_to_db(
         update_props: dict,
         constraint_props: dict,
         target_table: str,
-        db_type: DBType = DB_ENV):
+        db_type: DBType = DB_ENV,
+        logger: Logger = None):
     """
     根据传入的需要更新的字段和约束条件进行更新
     :param cursor:
@@ -227,6 +262,7 @@ def update_to_db(
     :param constraint_props: 约束条件字段
     :param target_table: 目标表
     :param db_type: 数据库类型(mysql或oracle)
+    :param logger
     :return:
     """
     sql, params = create_update_sql_and_params(cursor, update_props, constraint_props, target_table, db_type)
@@ -361,7 +397,7 @@ def create_table(
     :param trigger_name:当创建的是oracle表时,需要使用trigger创建自增主键
     :return:
     """
-    if db_type == DBType.oracle:
+    if db_type.name == DBType.oracle.name:
         # 创建oracle数据库中的表（结尾处不能加';'否则建表失败）
         sql = f"""
             create table {table_name}(id {number_type},logId {number_type},
@@ -407,7 +443,7 @@ def create_table(
         """
         cursor.execute(trigger_sql)
         cursor.connection.commit()
-    if db_type == DBType.mysql:
+    if db_type.name == DBType.mysql.name:
         # 创建mysql数据库中的表
         pass
 
@@ -459,7 +495,7 @@ def check_table_exists(table_name, cursor):
         cursor.fetchall()
         return True
     except Exception as e:
-        raise DBException(None, f'db_utils:check_table_exists\n创建表失败\n{str(e)}')
+        return False
 
 
 def process_dict(data_dict: dict):
@@ -476,6 +512,26 @@ def process_dict(data_dict: dict):
         else:
             row[k] = v
     return row
+
+
+def createInsertSql(properties: dict, db_type: DBType = DB_ENV):
+    """
+        Return
+            Fields,like `key1,key2,key3`
+            Values,like `'value1','value2','value3'`
+        used for create insert sql,like 'insert into tabName(%s) values(%s)'%(Fields,Values)
+        :properties props: 字符串属性值的字典
+        :return:
+        """
+    fields = ''
+    values = ''
+    for key in properties.keys():
+        value = properties[key]
+        fields += '%s,' % key
+        values += "'%s'," % value
+    fields = fields.strip(',')
+    values = values.strip(',')
+    return fields, values
 
 
 if __name__ == '__main__':
