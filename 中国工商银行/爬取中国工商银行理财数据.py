@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 from requests import Session
+import re
 
 from utils.db_utils import close, get_conn_oracle
 from utils.mark_log import mark_failure_log, getLocalDate, insertLogToDB
@@ -160,13 +161,30 @@ def parse_table(table_str):
     rows = []
     for div, tr in zip(divs, tables):
         IssuingBank = div.select('.ebdp-pc4promote-circularcontainer-tipTitle')
+        tzxz=''
+        cpbm = div.select('a[href]')[0].attrs['href']
+        cpbm = re.findall("'([^']*)'", cpbm)[0]
+        if div.select('.ebdp-pc4promote-circularcontainer-tip-gain'):
+            tzxz='固定收益类'
+        if div.select('.ebdp-pc4promote-circularcontainer-tip-mixed'):
+            tzxz='混合类'
+        if div.select('.ebdp-pc4promote-circularcontainer-tip-tradition'):
+            tzxz='传统产品'
+        # if div.select('.ebdp-pc4promote-circularcontainer-tip-si'):
+        #     print('私人')
         if len(IssuingBank) == 0:
             IssuingBank = '自营'
         else:
             IssuingBank = IssuingBank[0].text
         State = div.select('.ebdp-pc4promote-circularcontainer-text1')[0].text
         ProdName = div.select('a')[0].text
-        ProdProfit=''
+        clylnh=''
+        qrnhsyl=''
+        jygynhsyl=''
+        jsgynhsyl=''
+        jlgynhsyl=''
+        yqnhsyl=''
+        yjbjjz=''
         PurStarAmo = ''
         ProdLimit=''
         RiskLevel=''
@@ -174,25 +192,45 @@ def parse_table(table_str):
         UnitNet=''
         for index in range(tr.select('.ebdp-pc4promote-doublelabel-content').__len__()):
             title = tr.select('.ebdp-pc4promote-doublelabel-text')[index].text
-            if title in ('成立以来年化收益','七日年化收益率','业绩比较基准','近三月年化收益','近一月年化收益','近六月年化收益','预期年化收益率'):
-                ProdProfit = tr.select('.ebdp-pc4promote-doublelabel-content')[index].text
-            elif title in ('起购金额'):
+            if title == '成立以来年化收益':
+                clylnh = tr.select('.ebdp-pc4promote-doublelabel-content')[index].text
+            elif title == '七日年化收益率':
+                qrnhsyl = tr.select('.ebdp-pc4promote-doublelabel-content')[index].text
+            elif title == '近一月年化收益':
+                jygynhsyl = tr.select('.ebdp-pc4promote-doublelabel-content')[index].text
+            elif title == '近三月年化收益':
+                jsgynhsyl = tr.select('.ebdp-pc4promote-doublelabel-content')[index].text
+            elif title == '近六月年化收益':
+                jlgynhsyl = tr.select('.ebdp-pc4promote-doublelabel-content')[index].text
+            elif title == '预期年化收益率':
+                yqnhsyl = tr.select('.ebdp-pc4promote-doublelabel-content')[index].text
+            elif title == '业绩比较基准':
+                yjbjjz = tr.select('.ebdp-pc4promote-doublelabel-content')[index].text
+            elif title == '起购金额':
                 PurStarAmo = tr.select('.ebdp-pc4promote-doublelabel-content')[index].text
-            elif title in ('期限'):
+            elif title == '期限':
                 ProdLimit = tr.select('.ebdp-pc4promote-doublelabel-content')[index].text
             elif title in ('销售风险等级','产品风险等级'):
                 RiskLevel = tr.select('.ebdp-pc4promote-doublelabel-content')[index].text
-            elif title in ('每万份收益（元）'):
+            elif title == '每万份收益（元）':
                 SharesGain = tr.select('.ebdp-pc4promote-doublelabel-content')[index].text
-            elif title in ('单位净值'):
+            elif title == '单位净值':
                 UnitNet = tr.select('.ebdp-pc4promote-doublelabel-content')[index].text
         row = {
             'fxjg': IssuingBank,
             'cpzt': State,
+            'cpbm': cpbm,
             'cpmc': ProdName,
+            'tzxz':tzxz,
             'jz': UnitNet,
             'mwfsy': SharesGain,
-            'cpsy': ProdProfit,
+            'clylnh': clylnh,
+            'qrnhsyl': qrnhsyl,
+            'jygynhsyl': jygynhsyl,
+            'jsgynhsyl': jsgynhsyl,
+            'jlgynhsyl': jlgynhsyl,
+            'yqnhsyl': yqnhsyl,
+            'yjbjjz': yjbjjz,
             'qgje': PurStarAmo,
             'zdcyqx': ProdLimit,
             'fxdj': RiskLevel

@@ -6,17 +6,25 @@ CREATE TABLE ip_bank_icbc_personal
     logId           number(11),
     fxjg            varchar2(100),
     cpzt            varchar2(1000),
+    cpbm            varchar2(1000),
     cpmc            varchar2(1000),
+    tzxz            varchar2(1000),
     jz              varchar2(1000),
     mwfsy           varchar2(1000),
-    cpsy            varchar2(1000),
+    clylnh          varchar2(1000),
+    qrnhsyl         varchar2(1000),
+    jygynhsyl       varchar2(1000),
+    jsgynhsyl       varchar2(1000),
+    jlgynhsyl       varchar2(1000),
+    yqnhsyl         varchar2(1000),
+    yjbjjz          varchar2(1000),
     qgje            varchar2(1000),
     zdcyqx          varchar2(1000),
     fxdj            varchar2(1000),
     createTime      varchar2(100)
 );
 -- 创建日志表的序列（用于主键自增）
---drop sequence seq_icbc;
+drop sequence seq_icbc;
 create sequence seq_icbc
     minvalue 1
     maxvalue 99999999
