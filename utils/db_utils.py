@@ -384,7 +384,7 @@ def create_table(
         cursor,
         sequence_name: str,
         trigger_name: str,
-        db_type: DBType = DB_ENV):
+        db_type: DBType = DB_ENV)->bool:
     """
     根据dict字典创建表
     :param db_type:
@@ -442,7 +442,7 @@ def create_table(
             end;
         """
         cursor.execute(trigger_sql)
-        cursor.connection.commit()
+        return True
     if db_type.name == DBType.mysql.name:
         # 创建mysql数据库中的表
         pass

@@ -37,6 +37,7 @@ class AbstractCrawlRequest:
                  sleep_second=3,
                  logger: Logger = None,
                  log_level=None,
+                 check_props: List[str] = None,
                  **kwargs
                  ):
         self.db_poll = db_poll
@@ -57,6 +58,9 @@ class AbstractCrawlRequest:
         self.log_id = log_id
         self.logger = logger
         self.log_level = log_level
+        self.check_props = check_props
+        self._prep_request_flag = False
+        self._do_crawl_flag = True
 
         self.__connection = None
         self.__cursor = None
@@ -66,6 +70,13 @@ class AbstractCrawlRequest:
         self.logger.setLevel(self.log_level)
 
         self.kwargs = kwargs
+
+    @abstractmethod
+    def _prep_request(self):
+        """
+        请求之前的准备工作
+        """
+        pass
 
     def _do_request(self) -> Response:
         """
@@ -81,7 +92,7 @@ class AbstractCrawlRequest:
 
     @abstractmethod
     def _row_processor(self, row: dict) -> dict:
-        return row
+        pass
 
     def _row_key_mapping(self, row: dict, field_name_2_new_field_name: dict = None) -> dict:
         """
@@ -90,16 +101,16 @@ class AbstractCrawlRequest:
         :param field_name_2_new_field_name:
         :return:
         """
+        if self.logger:
+            self.logger.info(f"INFO:{getLocalDate()}:crawl_request.CrawlRequest._row_key_mapping:开始对{row}进行的key进行转换")
         if field_name_2_new_field_name is None:
             return row
         new_row = {}
         for k, v in row.items():
             if k in field_name_2_new_field_name.keys():
                 new_row[field_name_2_new_field_name[k]] = v
-
-        # 额外添加
-        new_row['logId'] = self.log_id
-        new_row['getLocalDate'] = getLocalDate()
+        if self.logger:
+            self.logger.info(f"INFO:{getLocalDate()}:crawl_request.CrawlRequest._row_key_mapping:key的转换结果{new_row}")
         return new_row
 
     def _row_value_mapping(self, row: dict, field_value_mapping: Dict[str, object] = None):
@@ -109,6 +120,8 @@ class AbstractCrawlRequest:
         :param field_value_mapping:
         :return:
         """
+        if self.logger:
+            self.logger.info(f"INFO:{getLocalDate()}:开始对{row}的value进行转换")
         if field_value_mapping is None:
             return row
         new_row = {}
@@ -129,6 +142,8 @@ class AbstractCrawlRequest:
                             self.mark_code_mapping[k][v].append(row)
                     v = value_mapping.get(str(v), str(v))
             new_row[k] = v
+        if self.logger:
+            self.logger.info(f"INFO:{getLocalDate()}:value的转换结果{new_row}")
         return new_row
 
     @abstractmethod
@@ -152,68 +167,96 @@ class AbstractCrawlRequest:
         """
         pass
 
-    @abstractmethod
-    def _do_crawl(self, session: Session):
-        self.logger.info("设置请求参数:")
-        self._next_request()
-        self.logger.info(f"当前请求参数:{json.dumps(self.request).encode().decode('unicode_escape')}")
+    def _do_crawl(self):
+        # 判断end_flag参数 为true的话 直接终止
         if self.end_flag:
             return
-        self.logger.info("开始执行请求:")
-        response = session.request(**self.request)
-        resp_str = response.text.encode(response.encoding).decode('utf-8') if response.encoding else response.text
-        resp_str = resp_str.replace('\n', '')
-        self.logger.info(
-            f"当前请求结果:"
-            f"{resp_str}"
-        )
+
+        if not self._prep_request():
+            self._prep_request()
+
+        if self.logger:
+            self.logger.info(f"INFO:{getLocalDate()}:开始设置请求参数")
+        # 设置请求参数
+        self._next_request()
+
+        if self.logger:
+            self.logger.info(f"INFO:{getLocalDate()}:当前请求参数:{self.request}")
+
+        if self.logger:
+            self.logger.info(f"INFO:{getLocalDate()}:开始执行请求")
+
+        # 执行请求操作
+        response = self._do_request()
         time.sleep(self.sleep_second)
+
+        # 根据请求结果是否需要继续处理
         self.end_flag = self._if_end(response)
-        self.logger.info(f"判断当前请求之后是否需要终止爬取:{self.end_flag}")
+
+        if self.logger:
+            self.logger.info(f"INFO:{getLocalDate()}:判断当前请求之后是否需要终止爬取:{self.end_flag}")
         if self.end_flag:
             # 如果触发了终止条件
             # 1.如果需要继续访问
             if self.go_on:
-                self.logger.info(f"当前请求处理之后终止爬取")
+                if self.logger:
+                    self.logger.info(f"INFO:{getLocalDate()}:当前请求处理之后终止爬取")
                 pass
             else:
-                self.logger.info(f"忽略当前请求并终止爬取")
+                if self.logger:
+                    self.logger.info(f"INFO:{getLocalDate()}:忽略当前请求并终止爬取")
                 return
+
+        # 将请求结果转换为字典列表
         rows: List[dict] = self._parse_response(response)
-        self.logger.info(f"将请求结果转换为列表:{json.dumps(rows).encode().decode('unicode_escape')}")
-        self.logger.info(f"开始对每一行数据进行转换")
+        if self.logger:
+            self.logger.info(f"INFO:{getLocalDate()}:将请求结果转换为字典列表,具有{len(rows)}条数据")
+            self.logger.info(f"INFO:{getLocalDate()}:开始对每一行数据进行转换")
+        count = 1
         for row in rows:
-            self.logger.info(f"开始转换：{json.dumps(row).encode().decode('unicode_escape')}")
-            self.logger.info(f"调用_row_value_mapping转换value:")
-            new_row = self._row_value_mapping(row, self.field_value_mapping)
-            self.logger.info(f"转换结果:{json.dumps(new_row).encode().decode('unicode_escape')}")
-            self.logger.info(f"调用_row_processor转换value:")
-            new_row = self._row_processor(new_row)
-            self.logger.info(f"转换结果:{json.dumps(new_row).encode().decode('unicode_escape')}")
-            self.logger.info(f"调用_row_key_mapping转换key:")
-            new_row = self._row_key_mapping(new_row, self.filed_name_2_new_field_name)
-            new_row = self._row_post_processor(new_row)
-            self.logger.info(f"转换结果:{json.dumps(new_row).encode().decode('unicode_escape')}")
+            if self.logger:
+                self.logger.info(f"INFO:{getLocalDate()}:开始转换第{count}条数据")
+            new_row = self._row_transform(row)
             self.processed_rows.append(new_row)
+            count += 1
+
+    def _row_transform(self, row: dict):
+        new_row = self._row_value_mapping(row, self.field_value_mapping)
+        new_row = self._row_processor(new_row)
+        new_row = self._row_key_mapping(new_row, self.filed_name_2_new_field_name)
+        new_row = self._row_post_processor(new_row)
+        return new_row
 
     def do_crawl(self):
-        self.logger.info('开始准备爬取数据:')
+        if not self._do_crawl_flag:
+            raise CrawlRequestException(None, f"ERROR:{getLocalDate()}:已经调用close方法,无法再次执行")
+        if self.logger:
+            self.logger.info(f'INFO:{getLocalDate()}:开始准备爬取数据')
         while not self.end_flag:
-            self._do_crawl(self.session)
+            self._do_crawl()
 
-    def do_save(self, check_props: list):
+    def do_save(self):
+        if not self._do_crawl_flag:
+            raise CrawlRequestException(None, f"ERROR:{getLocalDate()}:已经调用close方法,无法再次执行")
+        if self.logger:
+            self.logger.info(f"INFO:{getLocalDate()}:开始保存数据")
         try:
-            self._do_save(check_props)
+            self._do_save()
             self.__connection.commit()
         except Exception as e:
-            self.logger.error(f"WARN:{getLocalDate()}:保存数据失败")
+            if self.logger:
+                self.logger.error(f"WARN:{getLocalDate()}:{e}")
+                self.logger.error(f"WARN:{getLocalDate()}:保存数据失败")
+            else:
+                print(e)
+                print("保存数据失败")
         finally:
             if self.__cursor:
                 self.__cursor.close()
             if self.__connection:
                 self.__connection.close()
 
-    def _do_save(self, check_props: list):
+    def _do_save(self):
         """
         存储数据 保证一个_do_save在一个事务之中
         :param cursor:
@@ -221,50 +264,80 @@ class AbstractCrawlRequest:
         :return:
         """
         if not (self.__connection and self.__cursor):
-            self.logger.info(f"INFO:{getLocalDate()}:开始打开数据连接用于保存数据")
+            if self.logger:
+                self.logger.info(f"INFO:{getLocalDate()}:开始打开数据连接用于保存数据")
             self.__connection = self.db_poll.connection()
             self.__cursor = self.__connection.cursor()
-            self.logger.info(f"INFO:{getLocalDate()}:成功打开数据库连接")
-        check_table_exists_connection, check_table_exists_cursor = None, None
+            if self.logger:
+                self.logger.info(f"INFO:{getLocalDate()}:成功打开数据库连接")
+        else:
+            self.logger.info(f"INFO:{getLocalDate()}:监测到已连接到数据库")
+
+        check_table_exists_flag = None
         try:
-            check_table_exists_connection = self.db_poll.connection()
-            check_table_exists_cursor = check_table_exists_connection.cursor()
-            flag = check_table_exists(get_table_name(self.identifier), check_table_exists_cursor)
+            check_table_exists_flag = check_table_exists(get_table_name(self.identifier), self.__cursor)
             self.logger.info(
-                f"INFO:{getLocalDate()}:检测目标表是否存在{get_table_name(self.identifier)}:{'存在' if flag else '不存在'}")
-            if not flag and self.processed_rows:
-                row_sample = self.processed_rows[0]
-                row_sample['logId'] = 1
-                row_sample['createTime'] = getLocalDate()
-                create_table(row_sample,
-                             self.table_str_type,
-                             self.table_number_type,
-                             get_table_name(self.identifier),
-                             check_table_exists_cursor,
-                             get_sequence_name(self.identifier),
-                             get_trigger_name(self.identifier),
-                             self.db_type)
-                check_table_exists_connection.commit()
-                self.logger.info(f"INFO:{getLocalDate()}:创建目标表{get_table_name(self.identifier)}成功")
+                f"INFO:{getLocalDate()}:检测目标表是否存在{get_table_name(self.identifier)}:{'存在' if check_table_exists_flag else '不存在'}")
         except Exception as e:
-            self.logger.error(f"WARN:{getLocalDate()}:创建目标表{get_table_name(self.identifier)}失败")
-        finally:
-            if check_table_exists_cursor:
-                check_table_exists_connection.close()
-            if check_table_exists_connection:
-                check_table_exists_connection.close()
-        self.logger.info(f"INFO:{getLocalDate()}:开始保存数据")
-        for row in self.processed_rows:
+            if self.logger:
+                self.logger.error(
+                    f"ERROR:{getLocalDate()}:crawl_request.CrawlRequest._do_save/db_utils.check_table_exists错误")
+                self.logger.error(f"ERROR:{getLocalDate()}:{e}")
+            else:
+                raise CrawlRequestException(None,
+                                            f"ERROR:{getLocalDate()}:crawl_request.CrawlRequest._do_save/db_utils.check_table_exists检测目标表是否存在报错:{e}")
+        if not check_table_exists_flag and self.processed_rows:
+            if self.logger:
+                f"INFO:{getLocalDate()}:开始创建表{get_table_name(self.identifier)}"
+            row_sample = self.processed_rows[0]
+            row_sample['logId'] = 1
+            row_sample['createTime'] = getLocalDate()
             try:
-                self._save_row(cursor=self.__cursor,
-                               row=row,
-                               check_props={k: row[k] for k in check_props})
-                self.logger.info(f"INFO:{getLocalDate()}:成功保存{row}")
+                create_flag = create_table(row_sample,
+                                           self.table_str_type,
+                                           self.table_number_type,
+                                           get_table_name(self.identifier),
+                                           self.__cursor,
+                                           get_sequence_name(self.identifier),
+                                           get_trigger_name(self.identifier),
+                                           self.db_type)
+                if create_flag:
+                    self.logger.info(f"INFO:{getLocalDate()}:成功创建{get_table_name(self.identifier)}表")
             except Exception as e:
-                self.logger.error(f"ERROR:{getLocalDate()}:crawl_request.CrawlRequest._do_save保存数据失败")
+                if self.logger:
+                    self.logger.error(
+                        f"ERROR:{getLocalDate()}:crawl_request._do_save/db_utils.create_table创建表{get_table_name(self.identifier)}失败")
+                    self.logger.error(f"ERROR:{getLocalDate()}:{e}")
+                else:
+                    raise CrawlRequestException(None,
+                                                f"ERROR:{getLocalDate()}:crawl_request.CrawlRequest._do_save/db_utils.create_table创建{get_table_name(self.identifier)}表失败:{e}")
+
+        if self.logger:
+            self.logger.info(f"INFO:{getLocalDate()}:开始保存数据")
+        for row in self.processed_rows:
+            check_prosp_dict = {}
+            try:
+                check_prosp_dict = {k: row[k] for k in self.check_props}
+            except Exception as e:
+                if self.logger:
+                    self.logger.error(f"ERROR:{getLocalDate()}:crawl_request.CrawlRequest.check_props约束属性不存在于{row}中")
+                    self.logger.error(f"ERROR:{getLocalDate()}:数据保存失败：{row}")
+                    continue
+                else:
+                    raise CrawlRequestException(None,
+                                                f"ERROR:{getLocalDate()}:crawl_request.CrawlRequest.check_props不存在于{row}中")
+            try:
+                self._save_row(row=row, check_props_dict=check_prosp_dict)
+                if self.logger:
+                    self.logger.info(f"INFO:{getLocalDate()}:成功保存{row}")
+            except Exception as e:
+                if self.logger:
+                    self.logger.error(f"ERROR:{getLocalDate()}:crawl_request.CrawlRequest._do_save保存数据失败")
+                else:
+                    raise CrawlRequestException(None, f"crawl_request.CrawlRequest._do_save保存数据失败")
         self.processed_rows = []
 
-    def _save_row(self, cursor, row: dict, check_props: dict):
+    def _save_row(self, row: dict, check_props_dict: dict):
         """
         存储数据
         :param cursor:
@@ -273,23 +346,32 @@ class AbstractCrawlRequest:
         :return:
         """
         try:
-            update_else_insert_to_db(cursor=cursor,
+            update_else_insert_to_db(cursor=self.__cursor,
                                      target_table=get_table_name(self.identifier),
                                      props_dict=row,
-                                     check_props=check_props,
+                                     check_props=check_props_dict,
                                      db_type=self.db_type,
                                      logger=self.logger)
         except Exception as e:
             exception = cast_exception(e)
             if isinstance(exception, CustomException):
                 if exception.code == 1:
-                    add_fields(cursor=cursor,
+                    add_fields(cursor=self.__cursor,
                                target_table=get_table_name(self.identifier),
                                fields=list(row.keys()),
                                filed_type=self.table_str_type)
-                    self._save_row(cursor, row, check_props)
+                    self._save_row(row, check_props_dict)
 
             else:
-                self.logger.error(f"WARN:{getLocalDate()}:crawl_request.CrawlRequest._save_row保存数据失败{str(row)}")
-                self.logger.error(f"WARN:{getLocalDate()}:crawl_request.CrawlRequest._save_row{str(exception)}")
                 raise exception
+
+    def close(self):
+        if self.session:
+            self.session.close()
+        if self.__cursor and self.__connection:
+            self.__cursor.close
+            self.__connection.close
+        if self._do_crawl_flag:
+            self._do_crawl_flag = False
+        else:
+            raise CrawlRequestException(None, f"ERROR:{getLocalDate()}:close方法仅能调用一次")

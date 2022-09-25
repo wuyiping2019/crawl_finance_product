@@ -1,8 +1,9 @@
 import datetime
 
+from dbutils.pooled_db import PooledDB
 from pymysql.cursors import Cursor
 from global_config import LOG_TABLE
-from db_utils import createInsertSql, update_to_db
+from db_utils import createInsertSql, update_to_db, get_conn
 
 
 def getLocalDate():
@@ -64,46 +65,63 @@ def get_generated_log_id(name: str, cursor):
     return generated_log_id
 
 
-def mark_start_log(name: str, startDate: str, cursor):
+def mark_start_log(name: str, start_date: str, db_poll: PooledDB = None):
     """
     记录开始日志
     :param name:
-    :param startDate:
-    :param cursor:
+    :param start_date:
+    :param db_poll:
     :return:
     """
     start_log = {
         "name": name,
-        "startDate": getLocalDate(),
+        "startDate": start_date,
         "status": "正在执行中"
     }
+    if db_poll:
+        cursor = db_poll.connection().cursor()
+    else:
+        cursor = get_conn().cursor()
     insertLogToDB(cur=cursor, properties=start_log)
-    cursor.connection.commit()
+    conn = cursor.connection
+    conn.commit()
+    if cursor:
+        cursor.close()
+    if conn:
+        conn.close()
 
 
-def mark_success_log(count: str, endDate: str, generated_log_id: int, cursor):
+def mark_success_log(count: str, end_date: str, generated_log_id: int, db_poll: PooledDB = None):
     """
     记录成功日志
     :param count:
-    :param endDate:
+    :param end_date:
     :param generated_log_id:
-    :param cursor:
+    :param db_poll:
     :return:
     """
     success_log = {
         "status": "完成",
-        "endDate": getLocalDate(),
-        'updateTime': getLocalDate(),
+        "endDate": end_date,
+        'updateTime': end_date,
         "count": count,
         "result": "成功",
         "detail": "成功"
     }
+    if db_poll:
+        cursor = db_poll.connection().cursor()
+    else:
+        cursor = get_conn().cursor()
     update_to_db(cursor=cursor,
                  update_props=success_log,
                  constraint_props={'id': generated_log_id},
                  target_table=LOG_TABLE)
-    # updateLogToDB(cur=cursor, log_id=generated_log_id, properties=success_log)
-    cursor.connection.commit()
+    conn = cursor.connection
+    conn.commit()
+    if cursor:
+        cursor.close()
+    if conn:
+        conn.close()
 
 
 def mark_failure_log(e: Exception, endDate: str, generated_log_id: int, cursor, count=0):

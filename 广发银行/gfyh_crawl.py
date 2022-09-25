@@ -2,21 +2,22 @@ import json
 
 from requests import Session
 
-from gfyh_pc import do_crawl as do_crawl_pc
 from gfyh_mobile import do_crawl as do_crawl_mobile
 from utils.global_config import get_table_name
 from utils.spider_flow import SpiderFlow, process_flow
+from gfyh_config import SLEEP_SECOND, MASK
+from gfyh_mobile2 import gfyh_crawl_mobile
+from gfyh_pc import do_crawl
 
 
 class SpiderFlowImpl(SpiderFlow):
-    def callback(self, conn, cursor, session: Session, log_id: int, **kwargs):
-        # crawl_pc = do_crawl_pc(conn, session, log_id)
-        crawl_mobile = do_crawl_mobile(session, conn, log_id)
-        rows = crawl_mobile.processed_rows
-        crawl = crawl_mobile
-        crawl.processed_rows = rows
-        print(json.dumps(crawl.processed_rows).encode().decode('unicode_escape'))
-        crawl.do_save()
+    def callback(self, conn, cursor, session: Session, log_id: int, db_poll=None, **kwargs):
+        gfyh_crawl_mobile.session = session
+        gfyh_crawl_mobile.db_poll = db_poll
+        gfyh_crawl_mobile.do_crawl()
+        crawl = do_crawl(conn, session)
+        rows = crawl.processed_rows
+        print(rows)
 
 
 if __name__ == '__main__':

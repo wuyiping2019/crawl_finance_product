@@ -1,0 +1,2 @@
+MASK = 'gfyh'
+SLEEP_SECOND = 3
