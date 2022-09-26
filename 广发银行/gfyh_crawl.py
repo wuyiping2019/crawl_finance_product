@@ -4,11 +4,10 @@ from crawl import MutiThreadCrawl
 from utils.global_config import get_table_name
 from utils.spider_flow import SpiderFlow, process_flow
 from gfyh_config import MASK, LOG_NAME
-from gfyh_mobile2 import gfyh_crawl_mobile
+from gfyh_mobile import gfyh_crawl_mobile
 
 
 class SpiderFlowImpl(SpiderFlow):
-
     def callback(self, session: Session, log_id: int, muti_thread_crawl: MutiThreadCrawl, **kwargs):
         gfyh_crawl_mobile.init_props(session=session,
                                      log_id=log_id,
