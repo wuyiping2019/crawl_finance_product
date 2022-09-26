@@ -42,34 +42,41 @@ def getLocalDate():
     return now.strftime("%Y-%m-%d %H:%M:%S")
 
 
-def get_db_poll(db_type: DBType = DB_ENV) -> PooledDB:
+def get_db_poll(db_type: DBType = DB_ENV, **kwargs) -> PooledDB:
     """
     创建数据库连接池
     :param db_type:
+    :param **kwargs:
     :return:
     """
     if db_type.name == DBType.mysql.name:
-        return PooledDB(pymysql,
-                        mincached=20,
-                        blocking=True,
-                        host=mysql_host,
-                        user=mysql_user,
-                        passwd=mysql_password,
-                        port=3306,
-                        db=mysql_database,
-                        connect_timeout=5,
-                        charset='utf8'
-                        )
+        if len(kwargs) == 0:
+            return PooledDB(pymysql,
+                            mincached=20,
+                            blocking=True,
+                            host=mysql_host,
+                            user=mysql_user,
+                            passwd=mysql_password,
+                            port=3306,
+                            db=mysql_database,
+                            connect_timeout=5,
+                            charset='utf8'
+                            )
+        else:
+            return PooledDB(pymysql, **kwargs)
     elif db_type.name == DBType.oracle.name:
         init_oracle()
-        return PooledDB(cx_Oracle,
-                        mincached=20,
-                        blocking=True,
-                        user=oracle_user,
-                        password=oracle_password,
-                        dsn=oracle_uri)
+        if len(kwargs) == 0:
+            return PooledDB(cx_Oracle,
+                            mincached=20,
+                            blocking=True,
+                            user=oracle_user,
+                            password=oracle_password,
+                            dsn=oracle_uri)
+        else:
+            return PooledDB(cx_Oracle, **kwargs)
     else:
-        return None
+        return PooledDB(**kwargs)
 
 
 def createInsertSql(properties: dict, db_type: DBType = DB_ENV):
@@ -384,7 +391,7 @@ def create_table(
         cursor,
         sequence_name: str,
         trigger_name: str,
-        db_type: DBType = DB_ENV)->bool:
+        db_type: DBType = DB_ENV) -> bool:
     """
     根据dict字典创建表
     :param db_type:

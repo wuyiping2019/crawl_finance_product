@@ -1,5 +1,6 @@
 import json
 import logging
+import sys
 import time
 import types
 from abc import abstractmethod, ABC
@@ -8,9 +9,12 @@ from typing import Dict, List
 
 from dbutils.pooled_db import PooledDB
 from requests import Session, Response
+
+from crawl import MutiThreadCrawl
 from utils.custom_exception import cast_exception, CustomException
 from utils.db_utils import create_table, update_else_insert_to_db, add_fields, check_table_exists
 from utils.global_config import DB_ENV, DBType, get_sequence_name, get_trigger_name, get_table_name
+from utils.logging_utils import get_logger
 from utils.mark_log import getLocalDate
 
 
@@ -22,11 +26,12 @@ class CrawlRequestException(Exception):
 
 class AbstractCrawlRequest:
     def __init__(self,
-                 db_poll: PooledDB,
-                 session: Session,
                  request: dict,
                  identifier: str,
-                 log_id: int,
+                 muti_thread_crawl: MutiThreadCrawl = None,
+                 db_poll: PooledDB = None,
+                 session: Session = None,
+                 log_id: int = None,
                  table_str_type: str = 'clob' if DB_ENV.name == DBType.oracle.name else 'text' if DB_ENV.name == DBType.mysql.name else None,
                  table_number_type: str = 'number(11)' if DB_ENV.name == DBType.oracle.name else 'long' if DB_ENV.name == DBType.mysql.name else None,
                  db_type: DBType = DB_ENV,
@@ -35,8 +40,6 @@ class AbstractCrawlRequest:
                  mark_code_mapping_count: int = 1,
                  go_on: bool = False,
                  sleep_second=3,
-                 logger: Logger = None,
-                 log_level=None,
                  check_props: List[str] = None,
                  **kwargs
                  ):
@@ -56,8 +59,6 @@ class AbstractCrawlRequest:
         self.identifier = identifier
         self.sleep_second = sleep_second
         self.log_id = log_id
-        self.logger = logger
-        self.log_level = log_level
         self.check_props = check_props
         self._prep_request_flag = False
         self._do_crawl_flag = True
@@ -65,11 +66,22 @@ class AbstractCrawlRequest:
         self.__connection = None
         self.__cursor = None
 
-        console_handle = logging.StreamHandler()
-        self.logger.addHandler(console_handle)
-        self.logger.setLevel(self.log_level)
+        self.muti_thread_crawl = muti_thread_crawl
 
         self.kwargs = kwargs
+
+    def init_props(self, **kwargs):
+        for k, v in kwargs.items():
+            if hasattr(self, k):
+                setattr(self, k, v)
+                if k == 'muti_thread_crawl':
+                    current_module_name = sys.modules[__name__].__name__
+                    config_dict = getattr(v, 'config_dict')
+                    self.logger = get_logger(log_name=current_module_name,
+                                             log_level=config_dict['logger.level'],
+                                             log_modules=config_dict['logger.modules'],
+                                             module_name=current_module_name
+                                             )
 
     @abstractmethod
     def _prep_request(self):

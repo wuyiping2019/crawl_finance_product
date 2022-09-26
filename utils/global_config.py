@@ -6,8 +6,8 @@ class DBType(Enum):
     mysql = 'MYSQL'
 
 
-# ORACLE_CLIENT = r'D:\servers\instantclient_21_6'
-ORACLE_CLIENT = r'E:\pycharm_projects\kb_graph_sync\instantclient_21_6'
+ORACLE_CLIENT = r'D:\servers\instantclient_21_6'
+# ORACLE_CLIENT = r'E:\pycharm_projects\kb_graph_sync\instantclient_21_6'
 LOG_TABLE = 'spider_log'
 DB_ENV = DBType.oracle
 
@@ -25,16 +25,21 @@ oracle_uri = '10.2.15.16:1521/testdb'
 oracle_str_type = 'varchar2(1000)'
 oracle_number_type = 'number(11)'
 
-oracle_user = 'User123'
-oracle_password = '123456'
-oracle_uri = '127.0.0.1:1521/orcl'
-oracle_str_type = 'varchar2(1000)'
-oracle_number_type = 'number(11)'
+# oracle_user = 'User123'
+# oracle_password = '123456'
+# oracle_uri = '127.0.0.1:1521/orcl'
+# oracle_str_type = 'varchar2(1000)'
+# oracle_number_type = 'number(11)'
 
 
-def init_oracle():
+def init_oracle(lib_dir=None):
     import cx_Oracle as cx
-    cx.init_oracle_client(lib_dir=ORACLE_CLIENT)
+    if not lib_dir:
+        lib_dir = ORACLE_CLIENT
+    try:
+        cx.init_oracle_client(lib_dir=lib_dir)
+    except Exception as e:
+        pass
     return cx
 
 

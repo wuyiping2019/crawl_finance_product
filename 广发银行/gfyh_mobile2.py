@@ -1,11 +1,8 @@
 import json
-import logging
 from typing import List
-
-import requests
 from requests import Response
 from utils.crawl_request import AbstractCrawlRequest
-from utils.db_utils import get_db_poll, getLocalDate
+from utils.db_utils import getLocalDate
 from utils.mappings import FIELD_MAPPINGS
 
 
@@ -131,8 +128,7 @@ class GfyhCrawlRequest(AbstractCrawlRequest):
 
 
 gfyh_crawl_mobile = GfyhCrawlRequest(
-    db_poll=None,
-    session=None,
+    # 请求参数
     request={
         'url': 'https://wap.cgbchina.com.cn/h5-mobilebank-app/noSessionServlet/hbss/fn20027.lgx',
         'headers': {
@@ -152,6 +148,7 @@ gfyh_crawl_mobile = GfyhCrawlRequest(
         },
         'method': 'post'
     },
+    #
     identifier='gfyh',
     field_value_mapping={
         'issPrice': lambda x: str(x) + '元',
@@ -178,9 +175,5 @@ gfyh_crawl_mobile = GfyhCrawlRequest(
         'yieldName2': 'yieldName2',
         'yieldVal2': 'yieldVal2'
     },
-
-    log_id=1,
-    log_level='INFO',
-    logger=logging.getLogger(),
     check_props=['logId', 'cpbm']
 )

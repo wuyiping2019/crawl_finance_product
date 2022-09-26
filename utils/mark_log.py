@@ -3,7 +3,7 @@ import datetime
 from dbutils.pooled_db import PooledDB
 from pymysql.cursors import Cursor
 from global_config import LOG_TABLE
-from db_utils import createInsertSql, update_to_db, get_conn
+from db_utils import createInsertSql, update_to_db, get_conn, close
 
 
 def getLocalDate():
@@ -52,17 +52,28 @@ def insertLogToDB(cur: Cursor, properties: dict, log_table=LOG_TABLE):
     cur.execute(insert_sql)
 
 
-def get_generated_log_id(name: str, cursor):
+def get_generated_log_id(name: str, db_poll: PooledDB):
     """
     :param log_table: 日志表
     :param name: 日志表中的name字段
-    :param cursor:
+    :param db_poll:
     :return:
     """
     # 查询的这条日志信息的自增主键id
-    cursor.execute("select max(id) from %s where name = '%s'" % (LOG_TABLE, name))
-    generated_log_id = cursor.fetchone()[0]
-    return generated_log_id
+    cursor, conn = None, None
+    try:
+        conn = db_poll.connection()
+        cursor = conn.cursor()
+        cursor.execute("select max(id) from %s where name = '%s'" % (LOG_TABLE, name))
+        generated_log_id = cursor.fetchone()[0]
+        conn.commit()
+        return generated_log_id
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        raise e
+    finally:
+        close([cursor, conn])
 
 
 def mark_start_log(name: str, start_date: str, db_poll: PooledDB = None):
@@ -78,17 +89,18 @@ def mark_start_log(name: str, start_date: str, db_poll: PooledDB = None):
         "startDate": start_date,
         "status": "正在执行中"
     }
-    if db_poll:
+    cursor, conn = None, None
+    try:
         cursor = db_poll.connection().cursor()
-    else:
-        cursor = get_conn().cursor()
-    insertLogToDB(cur=cursor, properties=start_log)
-    conn = cursor.connection
-    conn.commit()
-    if cursor:
-        cursor.close()
-    if conn:
-        conn.close()
+        insertLogToDB(cur=cursor, properties=start_log)
+        conn = cursor.connection
+        conn.commit()
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        raise e
+    finally:
+        close([cursor, conn])
 
 
 def mark_success_log(count: str, end_date: str, generated_log_id: int, db_poll: PooledDB = None):
@@ -108,30 +120,31 @@ def mark_success_log(count: str, end_date: str, generated_log_id: int, db_poll: 
         "result": "成功",
         "detail": "成功"
     }
-    if db_poll:
-        cursor = db_poll.connection().cursor()
-    else:
-        cursor = get_conn().cursor()
-    update_to_db(cursor=cursor,
-                 update_props=success_log,
-                 constraint_props={'id': generated_log_id},
-                 target_table=LOG_TABLE)
-    conn = cursor.connection
-    conn.commit()
-    if cursor:
-        cursor.close()
-    if conn:
-        conn.close()
+    conn, cursor = None, None
+    try:
+        conn = db_poll.connection()
+        cursor = conn.cursor()
+        update_to_db(cursor=cursor,
+                     update_props=success_log,
+                     constraint_props={'id': generated_log_id},
+                     target_table=LOG_TABLE)
+        conn.commit()
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        raise e
+    finally:
+        close([cursor, conn])
 
 
-def mark_failure_log(e: Exception, endDate: str, generated_log_id: int, cursor, count=0):
+def mark_failure_log(e: Exception, endDate: str, generated_log_id: int, db_poll: PooledDB, count):
     """
     记录失败日志
     :param count:
     :param e:
     :param endDate:
     :param generated_log_id:
-    :param cursor:
+    :param db_poll:
     :return:
     """
     log_info = {
@@ -142,21 +155,42 @@ def mark_failure_log(e: Exception, endDate: str, generated_log_id: int, cursor, 
         "result": "失败",
         "detail": str(e)
     }
-    update_to_db(cursor=cursor,
-                 update_props=log_info,
-                 constraint_props={'id': generated_log_id},
-                 target_table=LOG_TABLE)
-    # updateLogToDB(cur=cursor, log_id=generated_log_id, properties=log_info)
-    cursor.connection.commit()
+    conn, cursor = None, None
+    try:
+        conn = db_poll.connection()
+        cursor = conn.cursor()
+        update_to_db(cursor=cursor,
+                     update_props=log_info,
+                     constraint_props={'id': generated_log_id},
+                     target_table=LOG_TABLE)
+        conn.commit()
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        raise e
+    finally:
+        close([cursor, conn])
 
 
-def get_write_count(table_name: str, generated_log_id: int, cursor):
+def get_write_count(table_name: str, generated_log_id: int, db_poll: PooledDB):
     """
     查询爬取的数据写入到指定表的数据条数
     :param table_name:
     :param generated_log_id:
-    :param cursor:
+    :param db_poll:
     :return:
     """
-    cursor.execute("select count(1) as count from %s where logId=%s" % (table_name, generated_log_id))
-    return cursor.fetchone()[0]
+    conn, cursor = None, None
+    try:
+        conn = db_poll.connection()
+        cursor = conn.cursor()
+        cursor.execute("select count(1) as count from %s where logId=%s" % (table_name, generated_log_id))
+        rs = cursor.fetchone()[0]
+        conn.commit()
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        raise e
+    finally:
+        close([cursor, conn])
+    return rs

@@ -1,24 +1,32 @@
-import json
-
+import sys
 from requests import Session
-
-from gfyh_mobile import do_crawl as do_crawl_mobile
+from crawl import MutiThreadCrawl
 from utils.global_config import get_table_name
 from utils.spider_flow import SpiderFlow, process_flow
-from gfyh_config import SLEEP_SECOND, MASK
+from gfyh_config import MASK, LOG_NAME
 from gfyh_mobile2 import gfyh_crawl_mobile
-from gfyh_pc import do_crawl
 
 
 class SpiderFlowImpl(SpiderFlow):
-    def callback(self, conn, cursor, session: Session, log_id: int, db_poll=None, **kwargs):
-        gfyh_crawl_mobile.session = session
-        gfyh_crawl_mobile.db_poll = db_poll
-        gfyh_crawl_mobile.do_crawl()
-        crawl = do_crawl(conn, session)
-        rows = crawl.processed_rows
-        print(rows)
+
+    def callback(self, session: Session, log_id: int, muti_thread_crawl: MutiThreadCrawl, **kwargs):
+        gfyh_crawl_mobile.init_props(session=session,
+                                     log_id=log_id,
+                                     muti_thread_crawl=muti_thread_crawl,
+                                     **kwargs)
+        try:
+            gfyh_crawl_mobile.do_crawl()
+            gfyh_crawl_mobile.do_save()
+        except Exception as e:
+            raise e
+        finally:
+            gfyh_crawl_mobile.close()
 
 
-if __name__ == '__main__':
-    process_flow('广发银行', get_table_name('gfyh'), SpiderFlowImpl())
+def do_crawl(self: MutiThreadCrawl):
+    process_flow(
+        log_name=LOG_NAME,
+        target_table=get_table_name(mask=MASK),
+        callback=SpiderFlowImpl(),
+        muti_thread_crawl=self
+    )
