@@ -12,7 +12,7 @@ from typing import Optional
 from dbutils.pooled_db import PooledDB
 
 from utils.custom_exception import CustomException
-from utils.db_utils import getLocalDate, get_db_poll
+from utils.db_utils import get_db_poll
 from utils.logging_utils import get_logger, log
 from utils.string_utils import remove_space
 import inspect
@@ -127,21 +127,21 @@ class MutiThreadCrawl:
 
     def wrapper_func(self, thread_func, *args):
         thread_func(*args)
-        # 线程数 - 1
+        # 线程任务执行完毕 线程数 - 1
         self.set_thread_num(self.get_thread_num() - 1)
-        log(self.logger, 'info', where, f'一个爬虫线程完成,当前执行线程数:{self.get_thread_num()}')
+        log(self.logger, 'info', where, f'{threading.current_thread().name}线程完成,当前执行线程数:{self.get_thread_num()}')
 
     def daemon_thread(self):
         log(self.logger, 'info', '__main__.daemon_thread', '启动守护线程')
         while True:
-            if self.get_remaining_thread_num() <= 0:
+            if self.get_remaining_thread_num() <= 0 and self.get_thread_num() == 0:
                 return
             if self.get_remaining_thread_num() > 0 and self.get_thread_num() < self.max_thread:
                 thread = self.pop_thread()
-                log(self.logger, 'info', '__main__.daemon_thread', '守护线程启动一个爬虫进程')
-                self.set_thread_num(self.get_thread_num() + 1)  # 线程数 + 1
-                log(self.logger, 'info', where, f'一个爬虫线程完成,当前执行线程数:{self.get_thread_num()}')
+                log(self.logger, 'info', '__main__.daemon_thread', f'守护线程启动{threading.current_thread().name}爬虫进程')
+                # 启动一个线程 线程数 + 1
                 thread.start()
+                self.set_thread_num(self.get_thread_num() + 1)  # 线程数 + 1
             time.sleep(3)
 
 
@@ -174,11 +174,11 @@ if __name__ == '__main__':
                                             logger=logger)
         for func, thread_name in zip(func_list, config_dict['crawl']):
             muti_thread_crawl.threads.append(threading.Thread(target=muti_thread_crawl.wrapper_func,
-                                                              args=[func, muti_thread_crawl, thread_name]))
-            daemon_thread = threading.Thread(target=muti_thread_crawl.daemon_thread)
-            daemon_thread.setDaemon(True)
-            daemon_thread.start()
-            daemon_thread.join()
+                                                              args=[func, muti_thread_crawl],
+                                                              name=thread_name[0]))
+        daemon_thread = threading.Thread(target=muti_thread_crawl.daemon_thread, name='starter')
+        daemon_thread.start()
+        daemon_thread.join()
     except Exception as e:
         raise e
     finally:

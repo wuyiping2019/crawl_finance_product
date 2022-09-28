@@ -30,11 +30,10 @@ class SpiderFlowImpl(SpiderFlow):
             gfyh_crawl_mobile.close()
 
 
-def do_crawl(self: MutiThreadCrawl, thread_name):
+def do_crawl(self: MutiThreadCrawl):
     process_flow(
         log_name=LOG_NAME,
         target_table=get_table_name(mask=MASK),
         callback=SpiderFlowImpl(),
-        muti_thread_crawl=self,
-        thread_name=thread_name
+        muti_thread_crawl=self
     )
