@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import logging
 
 import typing
 
+from utils.custom_exception import CustomException
 from utils.db_utils import getLocalDate
 
 
@@ -19,10 +22,25 @@ from utils.db_utils import getLocalDate
 
 def get_logger(log_name: str, log_level: str, log_modules: list, module_name: str) -> typing.Optional[logging.Logger]:
     logger = logging.getLogger(log_name)
-    console_handle = logging.StreamHandler()
-    logger.addHandler(console_handle)
     logger.setLevel(log_level)
+    if not logger.handlers:
+        console_handle = logging.StreamHandler()
+        logger.addHandler(console_handle)
     if module_name in log_modules:
         return logger
     else:
         return None
+
+
+def log(logger: logging.Logger, level: str | int, where: str, msg: str):
+    if logger:
+        if level.lower() in ['debug'] or level == 10:
+            logger.log(level=10, msg=f"{'DEBUG'.ljust(10)}:{getLocalDate()}:{where}:{msg}")
+        elif level.lower() in ['info'] or level == 20:
+            logger.log(level=20, msg=f"{'INFO'.ljust(10)}:{getLocalDate()}:{where}:{msg}")
+        elif level.lower() in ['warn', 'warning'] or level == 30:
+            logger.log(level=30, msg=f"{'WARN'.ljust(10)}:{getLocalDate()}:{where}:{msg}")
+        elif level.lower() in ['error'] or level == 40:
+            logger.log(level=40, msg=f"{'ERROR'.ljust(10)}:{getLocalDate()}:{where}:{msg}")
+        else:
+            raise CustomException(None, f"ERROR:{getLocalDate()}:logging_utils.log 调用失败")

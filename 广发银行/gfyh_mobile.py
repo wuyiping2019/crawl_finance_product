@@ -84,6 +84,9 @@ class GfyhCrawlRequest(AbstractCrawlRequest):
                 del row[key]
         row['logId'] = self.log_id
         row['createTime'] = getLocalDate()
+        row['crawl_from'] = 'mobile'
+        if 'cpbm' not in row.keys():
+            row['cpbm'] = row['cpmc']
         return row
 
     def get_json(self, page_no: int):
@@ -150,7 +153,7 @@ gfyh_crawl_mobile = GfyhCrawlRequest(
         'issPrice': lambda x: str(x) + '元',
         'prdAttr': lambda x: '非保本浮动收益类' if str(x) == "1" else '保本浮动收益类'
     },
-    filed_name_2_new_field_name={
+    field_name_2_new_field_name={
         'prdName': FIELD_MAPPINGS['产品名称'],
         'prdName2': FIELD_MAPPINGS['产品简称'],
         'prdCode': FIELD_MAPPINGS['产品编码'],

@@ -253,6 +253,7 @@ def insert_to_db(cursor,
             logger.error(
                 f"{getLocalDate()}:db_utils.insert_to_db params:{json.dumps(params).encode().decode('unicode_escape')}")
             logger.error(f"{getLocalDate()}:db_utils.insert_to_db {str(e)}")
+        raise e
 
 
 def update_to_db(

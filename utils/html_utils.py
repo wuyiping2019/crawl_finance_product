@@ -70,7 +70,7 @@ def parse_table(table: Tag, col_names: list, callbacks: dict, extra_attrs: dict,
                                                                                        'colspan') else 1
         row_dict = {}
         # 转换key
-        for key, value in zip(col_names, row):
+        for key, value in zip(col_names if col_names else heads, row):
             row_dict[key] = value
         # 删除pass的key
         if 'pass' in row_dict.keys():

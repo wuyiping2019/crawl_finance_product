@@ -13,7 +13,7 @@ from dbutils.pooled_db import PooledDB
 
 from utils.custom_exception import CustomException
 from utils.db_utils import getLocalDate, get_db_poll
-from utils.logging_utils import get_logger
+from utils.logging_utils import get_logger, log
 from utils.string_utils import remove_space
 import inspect
 
@@ -74,70 +74,79 @@ def parse_crawl_cfg() -> dict:
 
 
 class MutiThreadCrawl:
-    def __init__(self, crawl_queue: list, thread_num: int, poll: PooledDB, config_dict: dict, logger: Optional[Logger]):
-        self.crawl_queue = crawl_queue
+    def __init__(self, max_thread: int, poll: PooledDB, config_dict: dict, logger: Optional[Logger]):
         self.lock = threading.RLock()
-        self.thread_num = thread_num
-        self.end_flag = False
-        self.init_thread = thread_num
+        self.__thread_num = 0
+        self.max_thread = max_thread
         self.poll = poll
         self.config_dict = config_dict
         self.logger = logger
+        self.threads = []
 
-    def crawl_thread(self, crawl_func):
-        crawl_func()
+    def get_thread_num(self) -> int:
+        thread_num = 0
         self.lock.acquire()
-        if self.logger:
-            self.logger.info(f"INFO:{getLocalDate()}:一个线程完成,当前运行线程数{self.init_thread - self.thread_num}个")
-        self.thread_num -= 1
-        self.lock.release()
+        try:
+            thread_num = self.__thread_num
+        except Exception as e:
+            pass
+        finally:
+            self.lock.release()
+        return thread_num
 
-    def get_crawl(self):
-        new_thread_func = None
+    def set_thread_num(self, num):
         self.lock.acquire()
-        thread_flag = self.thread_num > 0
-        crawl_queue_flag = len(self.crawl_queue) > 0
-        if thread_flag and crawl_queue_flag:
-            new_thread_func = self.crawl_queue.pop(0)
-        if len(self.crawl_queue) == 0:
-            self.end_flag = True
-        self.thread_num -= 1
-        self.lock.release()
-        return new_thread_func
+        try:
+            self.__thread_num = num
+        except Exception as e:
+            pass
+        finally:
+            self.lock.release()
 
-    def wrapper_crawl_func(self, crawl_func):
-        crawl_func(self=self)
+    def get_remaining_thread_num(self):
         self.lock.acquire()
-        self.thread_num += 1
-        self.lock.release()
+        remaining_thread_num = None
+        try:
+            remaining_thread_num = len(self.threads)
+        except Exception as e:
+            pass
+        finally:
+            self.lock.release()
+        return remaining_thread_num
 
-    def run_crawl(self):
+    def pop_thread(self):
+        self.lock.acquire()
+        thread = None
+        try:
+            thread = self.threads.pop(0)
+        except Exception as e:
+            pass
+        finally:
+            self.lock.release()
+        return thread
+
+    def wrapper_func(self, thread_func, *args):
+        thread_func(*args)
+        # 线程数 - 1
+        self.set_thread_num(self.get_thread_num() - 1)
+        log(self.logger, 'info', where, f'一个爬虫线程完成,当前执行线程数:{self.get_thread_num()}')
+
+    def daemon_thread(self):
+        log(self.logger, 'info', '__main__.daemon_thread', '启动守护线程')
         while True:
-            end_flag = False
-            self.lock.acquire()
-            try:
-                if self.end_flag:
-                    end_flag = self.end_flag
-            except Exception as e:
-                raise CustomException(None, f"ERROR:{getLocalDate()}:访问end_flag失败")
-            finally:
-                self.lock.release()
-
-            if end_flag:
-                break
-            crawl_func = self.get_crawl()
-
-            if self.logger:
-                self.logger.info(f"INFO:{getLocalDate()}:准备启动一个线程爬取数据")
-            # 启动一个爬取数据的线程
-            thread = threading.Thread(target=self.wrapper_crawl_func, args=[crawl_func])
-            thread.start()
-            if self.logger:
-                self.logger.info(f"INFO:{getLocalDate()}:成功启动一个线程,当前运行线程数{self.init_thread - self.thread_num}个")
-            time.sleep(10)
+            if self.get_remaining_thread_num() <= 0:
+                return
+            if self.get_remaining_thread_num() > 0 and self.get_thread_num() < self.max_thread:
+                thread = self.pop_thread()
+                log(self.logger, 'info', '__main__.daemon_thread', '守护线程启动一个爬虫进程')
+                self.set_thread_num(self.get_thread_num() + 1)  # 线程数 + 1
+                log(self.logger, 'info', where, f'一个爬虫线程完成,当前执行线程数:{self.get_thread_num()}')
+                thread.start()
+            time.sleep(3)
 
 
 if __name__ == '__main__':
+    where = 'crawl.__main__'
     config_dict = parse_crawl_cfg()
     poll = get_db_poll()
     # 获取一个logger对象
@@ -146,28 +155,35 @@ if __name__ == '__main__':
                                           log_level=config_dict['logger.level'],
                                           log_modules=config_dict['logger.modules'],
                                           module_name=current_module_name)
-    crawl_queue = []
+    func_list = []
     try:
+        # 将所有需要执行的函数放入crawl_queue列表中
         for crawl in config_dict['crawl']:
+            threads = []
             try:
                 crawl_module = importlib.import_module(crawl[0])
                 for k, v in inspect.getmembers(crawl_module):
                     if k == crawl[1]:
-                        crawl_queue.append(v)
+                        func_list.append(v)
                         continue
-                thread_crawl = MutiThreadCrawl(crawl_queue=crawl_queue,
-                                               thread_num=config_dict['thread.thread_num'],
-                                               poll=poll,
-                                               config_dict=config_dict,
-                                               logger=logger
-                                               )
-                thread_crawl.run_crawl()
             except Exception as e:
                 raise CustomException(None, f'无法导入{crawl[0]}模块')
+        muti_thread_crawl = MutiThreadCrawl(max_thread=config_dict['thread.thread_num'],
+                                            poll=poll,
+                                            config_dict=config_dict,
+                                            logger=logger)
+        for func, thread_name in zip(func_list, config_dict['crawl']):
+            muti_thread_crawl.threads.append(threading.Thread(target=muti_thread_crawl.wrapper_func,
+                                                              args=[func, muti_thread_crawl, thread_name]))
+            daemon_thread = threading.Thread(target=muti_thread_crawl.daemon_thread)
+            daemon_thread.setDaemon(True)
+            daemon_thread.start()
+            daemon_thread.join()
     except Exception as e:
         raise e
     finally:
+        log(logger, 'info', where, '所有线程爬虫线程执行完毕,准备关闭数据库连接池')
         if poll:
-            if logger:
-                logger.info(f"INFO:{getLocalDate()}:关闭数据连接池")
+            log(logger, 'info', where, '关闭数据库连接池')
             poll.close()
+            log(logger, 'info', where, '成功关闭数据库连接池')

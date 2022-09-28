@@ -73,6 +73,7 @@ def process_flow(log_name: str, target_table: str,
         # 记录失败日志
         if generated_log_id:
             mark_failure_log(e, getLocalDate(), generated_log_id, muti_thread_crawl.poll, count)
+        raise e
     finally:
         # 释放资源
         close([cursor, conn, session])

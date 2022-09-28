@@ -9,6 +9,8 @@ def raise_exception(error, **kwargs):
     if isinstance(error, cx_Oracle.DatabaseError):
         if error.args[0].code == 904:
             raise CustomException(1, 'oracle中执行插入操作,插入的字段不存在')
+        else:
+            raise error
     # json.loads报错
     elif isinstance(error, json.JSONDecodeError):
         if error.colno == 2:
