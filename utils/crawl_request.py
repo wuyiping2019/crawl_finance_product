@@ -15,6 +15,7 @@ from utils.custom_exception import cast_exception, CustomException
 from utils.db_utils import create_table, update_else_insert_to_db, add_fields, check_table_exists
 from utils.global_config import DB_ENV, DBType, get_sequence_name, get_trigger_name, get_table_name
 from utils.logging_utils import get_logger, log
+from utils.mappings import FIELD_MAPPINGS
 from utils.mark_log import getLocalDate
 
 
@@ -122,6 +123,10 @@ class AbstractCrawlRequest:
         for k, v in row.items():
             if k in field_name_2_new_field_name.keys():
                 new_row[field_name_2_new_field_name[k]] = v
+            elif k in FIELD_MAPPINGS.values():
+                new_row[k] = v
+            else:
+                pass
         log(self.logger, 'debug', where, f'value转换结果:{new_row}')
         return new_row
 
@@ -191,8 +196,11 @@ class AbstractCrawlRequest:
             self._prep_request()
         log(self.logger, 'debug', where, '设置请求参数')
         self._next_request()
+        get_params_info = lambda \
+                x: f"当前请求的{x}:{self.request[x] if self.request.get(x, None) else None}" if self.request.get(
+            x, None) else ''
         log(self.logger, 'info', where,
-            f'当前请求的url:{self.request["url"]} 当前请求的body:{self.request["json"] if self.request.get("json", None) else self.request["data"]}')
+            f'{get_params_info("url")} {get_params_info("data")} {get_params_info("json")} {get_params_info("method")}')
         # 执行请求操作
         log(self.logger, 'debug', where, '执行请求操作')
         response = self._do_request()

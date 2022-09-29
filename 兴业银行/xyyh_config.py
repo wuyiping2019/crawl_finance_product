@@ -1,4 +1,4 @@
-LOG_NAME = '兴业银行'
+LOG_NAME = '兴业银行2'
 MASK_STR = 'xyyh'
 SEQUENCE_NAME = f'seq_{MASK_STR}'
 TRIGGER_NAME = f'trigger_{MASK_STR}'
