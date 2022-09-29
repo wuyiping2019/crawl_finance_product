@@ -1,17 +1,16 @@
 import json
 import time
+from typing import List
 
-from bs4 import BeautifulSoup, Tag
-from bs4.element import ResultSet
+from requests import Response
 from selenium.webdriver import ActionChains
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.chromium import webdriver
-from selenium.webdriver.common.actions.action_builder import ActionBuilder
-from selenium.webdriver.common.actions.mouse_button import MouseButton
 from selenium.webdriver.common.by import By
-from selenium.webdriver.remote.webelement import WebElement
 
 from utils.common_utils import delete_empty_value
+from utils.crawl_request import AbstractCrawlRequest
+from utils.crawl_request_utils import CrawlRequest
 from utils.mappings import FIELD_MAPPINGS
 from utils.selenium_utils import get_driver
 from utils.string_utils import remove_space
@@ -260,7 +259,51 @@ def process_xyyh_prd_list():
             # 此时index已经更新 重新进入产品展示页之后 继续处理下一条数据
             enter_all_prd(driver)
         time.sleep(SLEEP_SECOND)
-    return driver,rows
+    return driver, rows
+
+
+class XyyhCrawlRequest(AbstractCrawlRequest):
+
+    def _prep_request(self):
+        # 在此处打开driver
+        driver = enter_all_prd()
+        setattr(self, 'driver', driver)
+        time.sleep(SLEEP_SECOND)
+        setattr(self, 'index', 0)
+        setattr(self, 'total_count', None)
+        process_xyyh_detail_page
+
+    def _parse_response(self, response: Response) -> List[dict]:
+
+        # 此处从driver所处的当前页面解析html
+        driver = getattr(self, 'driver')
+
+    def _row_processor(self, row: dict) -> dict:
+        pass
+
+    def _row_post_processor(self, row: dict):
+        pass
+
+    def _if_end(self, response: Response) -> bool:
+        pass
+
+    def _do_request(self) -> Response:
+        # 覆盖父类的_do_request方法 无须任何处理
+        pass
+
+    def _next_request(self):
+        # 获取driver
+        driver = getattr(self, 'driver')
+        # 第几个产品
+        index = getattr(self, 'index')
+        # 进入产品详情页
+        driver.find_element(By.XPATH,
+                            f'//*[@id="finOnsaleIndex"]/div[2]/app-multi-list/div/div/div/app-fc-fin-prod-list/div[{index + 1}]').click()
+        # 确保已经进入详情页
+        if 'prodCode' not in driver.current_url:
+            # 表示如果没有进入详情页的话 重新进入循环
+            # 此时index没有更新 处理的还是同一条数据
+            setattr(self, 'failed_enter_detail_page', True)
 
 
 if __name__ == '__main__':

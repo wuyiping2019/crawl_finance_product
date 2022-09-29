@@ -195,6 +195,7 @@ class AbstractCrawlRequest:
             log(self.logger, 'debug', where, f"执行爬取工作之前的处理_prep_request")
             self._prep_request()
         log(self.logger, 'debug', where, '设置请求参数')
+        # 设置将要执行的请求状态数据
         self._next_request()
         get_params_info = lambda \
                 x: f"当前请求的{x}:{self.request[x] if self.request.get(x, None) else None}" if self.request.get(
