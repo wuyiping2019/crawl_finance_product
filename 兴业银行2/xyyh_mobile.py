@@ -1,99 +1,20 @@
 import json
 import time
+from typing import List
 
-from bs4 import BeautifulSoup, Tag
-from bs4.element import ResultSet
+from requests import Response
 from selenium.webdriver import ActionChains
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.chromium import webdriver
-from selenium.webdriver.common.actions.action_builder import ActionBuilder
-from selenium.webdriver.common.actions.mouse_button import MouseButton
 from selenium.webdriver.common.by import By
-from selenium.webdriver.remote.webelement import WebElement
 
 from utils.common_utils import delete_empty_value
+from utils.crawl_request import AbstractCrawlRequest
+from utils.logging_utils import log
 from utils.mappings import FIELD_MAPPINGS
 from utils.selenium_utils import get_driver
 from utils.string_utils import remove_space
 from xyyh_config import SLEEP_SECOND
-
-
-def locate_target_tag(driver: WebDriver, index=10):
-    try:
-        prd_element = driver.find_element(By.XPATH,
-                                          f'//*[@id="finOnsaleIndex"]/div[2]/app-multi-list/div/div/div/app-fc-fin-prod-list/div[{index}]')
-        ActionChains(driver) \
-            .move_to_element(prd_element) \
-            .perform()
-        time.sleep(SLEEP_SECOND)
-        text = driver.find_element(By.XPATH, '//*[@id="finOnsaleIndex"]/div[2]/app-multi-list/div/div/div/div').text
-        if remove_space(text) == '无更多数据':
-            return
-        else:
-            index = len(driver.find_elements(By.CLASS_NAME, 'ui-fin-prodlist'))
-            return locate_target_tag(driver, index)
-    except Exception as e:
-        print(e)
-        index = len(driver.find_elements(By.CLASS_NAME, 'ui-fin-prodlist'))
-        return locate_target_tag(driver, index)
-
-
-def scroll_down(driver: WebDriver, current_prd_index):
-    prd_count = len(driver.find_elements(By.CLASS_NAME, 'prod-title'))
-    if current_prd_index + 1 > prd_count:
-        # 获取尾部的数据 是否已经到了底部
-        text = ''
-        try:
-            text = driver.find_element(By.XPATH, '//*[@id="finOnsaleIndex"]/div[2]/app-multi-list/div/div/div/div').text
-        except Exception as e:
-            pass
-        if remove_space(text) == '无更多数据':
-            return
-        else:
-            # 否则需要向下滚动 展示更多的数
-            last_element = driver.find_element(By.XPATH,
-                                               f'//*[@id="finOnsaleIndex"]/div[2]/app-multi-list/div/div/div/app-fc-fin-prod-list/div[{current_prd_index + 1}]')
-            # 向下滚动
-            ActionChains(driver) \
-                .move_to_element(last_element) \
-                .perform()
-            time.sleep(SLEEP_SECOND)
-            # 再次检测展示的数据条数
-            prd_count = len(driver.find_elements(By.CLASS_NAME, 'prod-title'))
-            if prd_count > current_prd_index + 1:
-                return
-            else:
-                scroll_down(driver, current_prd_index)
-
-
-def click_prd(driver: WebDriver, index):
-    element = driver.find_element(By.XPATH,
-                                  f'//*[@id="finOnsaleIndex"]/div[2]/app-multi-list/div/div/div/app-fc-fin-prod-list/div[{index + 1}]')
-    element.click()
-    time.sleep(SLEEP_SECOND)
-
-
-def enter_all_prd(driver=None):
-    url = 'https://z.cib.com.cn/public/fin/onsale/index?type=all'
-    if not driver:
-        options = webdriver.ChromeOptions()
-        mobile_emulation = {"deviceName": "iPhone X"}
-        options.add_experimental_option("mobileEmulation", mobile_emulation)
-        opened_driver = get_driver(options=options)
-        time.sleep(SLEEP_SECOND)
-        opened_driver.get(url)
-        time.sleep(SLEEP_SECOND)
-    else:
-        opened_driver = driver
-    tab_title = opened_driver.find_element(By.CLASS_NAME, 'tab-title')
-    li_tags = tab_title.find_elements(By.TAG_NAME, 'li')
-    for li_tag in li_tags:
-        li_text = remove_space(li_tag.text)
-        if li_text == '全部':
-            li_tag.click()
-            time.sleep(SLEEP_SECOND)
-            break
-    return opened_driver
 
 
 def enter_jz_page(driver: WebDriver, times: int):
@@ -202,66 +123,182 @@ def process_xyyh_detail_page(driver: WebDriver, detail_url: str):
     return row
 
 
-def process_xyyh_prd_list():
-    rows = []
-    driver = enter_all_prd()
-    time.sleep(SLEEP_SECOND)
-    index = 0
-    total_count = None
-    while True:
-        init_prd_count = len(driver.find_elements(By.CLASS_NAME, 'prod-title'))
-        # 如果将要处理的index没有出现在页面中并且还没有到达产品列表的底部
-        if index + 1 > init_prd_count and not total_count:
-            scroll_down(driver, index)
-        # 获取产品总条数
-        if not total_count:
+class XyyhCrawlRequest(AbstractCrawlRequest):
+    def _scroll_down(self, driver: WebDriver, current_prd_index):
+        """
+        点击更多来展示更多的产品
+        :param driver:
+        :param current_prd_index:
+        :return:
+        """
+        prd_count = len(driver.find_elements(By.CLASS_NAME, 'prod-title'))
+        if current_prd_index + 1 > prd_count:
+            # 获取尾部的数据 是否已经到了底部
+            text = ''
             try:
                 text = driver.find_element(By.XPATH,
                                            '//*[@id="finOnsaleIndex"]/div[2]/app-multi-list/div/div/div/div').text
-                if remove_space(text) == '无更多数据':
-                    total_count = len(driver.find_elements(By.CLASS_NAME, 'prod-title'))
             except Exception as e:
                 pass
-        # 如果已经到底了页面底部
-        if total_count:
-            # 判断当前index
-            # 需要处理index + 1的数据
-            if index + 1 <= total_count:
-                pass
+            if remove_space(text) == '无更多数据':
+                # 当出现了无更多数据时 记录所有的数据
+                total_count = getattr(self, 'total_count', None)
+                if not total_count:
+                    try:
+                        text = driver.find_element(By.XPATH,
+                                                   '//*[@id="finOnsaleIndex"]/div[2]/app-multi-list/div/div/div/div').text
+                        if remove_space(text) == '无更多数据':
+                            total_count = len(driver.find_elements(By.CLASS_NAME, 'prod-title'))
+                            setattr(self, 'total_count', total_count)
+                    except Exception as e:
+                        pass
+                return
             else:
-                # 这个终止条件不生效 （原因不明）
+                # 否则需要向下滚动 展示更多的数
+                last_element = driver.find_element(By.XPATH,
+                                                   f'//*[@id="finOnsaleIndex"]/div[2]/app-multi-list/div/div/div/app-fc-fin-prod-list/div[{current_prd_index + 1}]')
+                # 向下滚动
+                ActionChains(driver) \
+                    .move_to_element(last_element) \
+                    .perform()
+                time.sleep(SLEEP_SECOND)
+                # 再次检测展示的数据条数
+                prd_count = len(driver.find_elements(By.CLASS_NAME, 'prod-title'))
+                if prd_count > current_prd_index + 1:
+                    return
+                else:
+                    self._scroll_down(driver, current_prd_index)
+
+    def _click_all(self):
+        # 在产品列表页中点击全部按钮
+        driver = getattr(self, 'driver')
+        tab_title = driver.find_element(By.CLASS_NAME, 'tab-title')
+        li_tags = tab_title.find_elements(By.TAG_NAME, 'li')
+        for li_tag in li_tags:
+            li_text = remove_space(li_tag.text)
+            if li_text == '全部':
+                li_tag.click()
+                time.sleep(SLEEP_SECOND)
                 break
+
+    def _enter_all_prd(self, driver=None):
+        # 进入产品列表页
+        try:
+            url = 'https://z.cib.com.cn/public/fin/onsale/index?type=all'
+            if not driver:
+                options = webdriver.ChromeOptions()
+                mobile_emulation = {"deviceName": "iPhone X"}
+                options.add_experimental_option("mobileEmulation", mobile_emulation)
+                opened_driver = get_driver(options=options)
+                time.sleep(SLEEP_SECOND)
+
+            else:
+                opened_driver = driver
+            opened_driver.get(url)
+            time.sleep(SLEEP_SECOND)
+            # 保存driver对象
+            setattr(self, 'driver', opened_driver)
+            # 点击全部按钮
+            self._click_all()
+        except Exception as e:
+            driver = getattr(self, 'driver', None)
+            time.sleep(SLEEP_SECOND)
+            self._enter_all_prd(driver=driver)
+
+    def _prep_request(self):
+        # 初始化处于全部产品列表页
+        self._enter_all_prd()
+        # 初始化index
+        setattr(self, 'index', 0)
+        self._prep_request_flag = True
+
+    def _parse_response(self, response: Response) -> List[dict]:
+        rows = getattr(response, 'rows')
+        return rows
+
+    def _row_processor(self, row: dict) -> dict:
+        return row
+
+    def _row_post_processor(self, row: dict):
+        return row
+
+    def _if_end(self, response: Response) -> bool:
+        # 判断是否终止
+        index = getattr(self, 'index', None)
+        total_count = getattr(self, 'total_count', None)
+        if total_count and index + 1 == total_count:
+            return True
         else:
-            pass
-        # 进入详情页
+            return False
+
+    def _do_request(self) -> Response:
+        log_where = 'xyyh_mobile.XyyhCrawlRequest._do_request'
+        # 覆盖父类的_do_request方法
+
+        # 获取driver
+        driver = getattr(self, 'driver')
+        # 获取当前需要处理的index
+        index = getattr(self, 'index')
+        # 获取total_count
+        total_count = getattr(self, 'total_count', None)
+
+        # 获取当前页面含有的产品个数
+        init_prd_count = len(driver.find_elements(By.CLASS_NAME, 'prod-title'))
+        # 当需要处理的产品还没有显示时 需要下拉展示更多直到出现目标产品
+        if index + 1 > init_prd_count and not total_count:
+            self._scroll_down(driver, index)
+        # 点击目标产品
+        # 创建一个Response对象
+        r = Response()
         try:
             driver.find_element(By.XPATH,
                                 f'//*[@id="finOnsaleIndex"]/div[2]/app-multi-list/div/div/div/app-fc-fin-prod-list/div[{index + 1}]').click()
+            time.sleep(SLEEP_SECOND)
+            # 解析产品详情页
+            row = process_xyyh_detail_page(driver, driver.current_url)
+            # 返回获取的数据
+            # 将数据绑定到Response上
+            setattr(r, 'rows', [row])
+            r.status_code = 200
+            return r
         except Exception as e:
-            break
-        # 确认已经进入详情页
-        if 'prodCode' not in driver.current_url:
-            # 表示如果没有进入详情页的话 重新进入循环
-            # 此时index没有更新 处理的还是同一条数据
-            continue
-        time.sleep(SLEEP_SECOND)
-        # 处理详情页数据
-        row = process_xyyh_detail_page(driver, driver.current_url)
-        rows.append(row)
-        print(row)
+            log(self.logger, 'warn', log_where, f'无法点击到第{index + 1}个产品')
+            log(self.logger, 'warn', log_where, f"{e}")
+            setattr(r, 'rows', [])
+            r.status_code = 400
+            return r
+
+    def _next_request(self):
+        where = 'xyyh_mobile.XyyhCrawlRequest._next_request'
         # 更新index
-        index += 1
-        # 返回
+        setattr(self, 'index', getattr(self, 'index') + 1)
+        # 一个从处于产品列表页开始->进入产品详情页->在此处初始化重新进入到产品列表页
+        driver = getattr(self, 'driver')
         driver.back()
-        # 确认已经返回到产品展示页面
-        if 'prdCode' in driver.current_url:
-            # 表示如果没有返回到产品展示页面
-            # 则重新使用url进入到产品展示页面
-            # 此时index已经更新 重新进入产品展示页之后 继续处理下一条数据
-            enter_all_prd(driver)
         time.sleep(SLEEP_SECOND)
-    return driver,rows
+        # 确保当前处于产品列表页
+        if 'prdCode' not in driver.current_url:
+            # 确实处于产品列表页
+            # 重新点击全部-测试过程中发现默认处于推荐中
+            try:
+                self._click_all()
+            except Exception as e:
+                log(self.logger, 'warn', where, '无法点击全部产品按钮')
+                # 重新进入
+                self._enter_all_prd(driver=driver)
+
+        else:
+            # 没有处于产品列表页
+            # 重新进入
+            self._enter_all_prd(driver=driver)
+
+    def close(self):
+        super().close()
+        driver = getattr(self, 'driver', None)
+        if driver:
+            driver.quit()
 
 
-if __name__ == '__main__':
-    process_xyyh_prd_list()
+xyyh_crawl_mobile = XyyhCrawlRequest()
+
+__all__ = ['xyyh_crawl_mobile']

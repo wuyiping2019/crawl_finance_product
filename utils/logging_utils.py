@@ -20,6 +20,14 @@ from utils.db_utils import getLocalDate
 #     logger.setLevel(logging.INFO)
 #     return logger
 
+def get_console_logger(name, filename=None):
+    logger = logging.getLogger(name)
+    logger.addHandler(logging.StreamHandler())
+    if filename:
+        logger.addHandler(logging.FileHandler(filename=filename))
+    logger.setLevel('DEBUG')
+    return logger
+
 
 def get_logger(log_name: str, log_level: str, log_modules: list, module_name: str) -> typing.Optional[logging.Logger]:
     logger = logging.getLogger(log_name)
@@ -38,7 +46,7 @@ def log(logger: logging.Logger, level: str | int, where: str, msg: str):
     if logger:
 
         if level.lower() in ['debug'] or level == 10:
-            logger.log(level=10, msg=f"{(thread_name +'-' + 'DEBUG').ljust(16)}:{getLocalDate()}:{where}:{msg}")
+            logger.log(level=10, msg=f"{(thread_name + '-' + 'DEBUG').ljust(16)}:{getLocalDate()}:{where}:{msg}")
         elif level.lower() in ['info'] or level == 20:
             logger.log(level=20, msg=f"{(thread_name + '-' + 'INFO').ljust(16)}:{getLocalDate()}:{where}:{msg}")
         elif level.lower() in ['warn', 'warning'] or level == 30:

@@ -51,7 +51,7 @@ class AbstractCrawlRequest:
         self.field_name_2_new_field_name = field_name_2_new_field_name
         self.field_value_mapping = field_value_mapping
         self.end_flag = False
-        self.request = request
+        self.request = request if request else {}
         self.go_on = go_on
         self.processed_rows = []
         self.db_type = db_type
@@ -79,8 +79,8 @@ class AbstractCrawlRequest:
                     current_module_name = sys.modules[__name__].__name__
                     config_dict = getattr(v, 'config_dict')
                     self.logger = get_logger(log_name=current_module_name,
-                                             log_level=config_dict['logger.level'],
-                                             log_modules=config_dict['logger.modules'],
+                                             log_level=config_dict['logger']['level'],
+                                             log_modules=config_dict['logger']['modules'],
                                              module_name=current_module_name,
                                              )
 
@@ -106,7 +106,7 @@ class AbstractCrawlRequest:
 
     @abstractmethod
     def _row_processor(self, row: dict) -> dict:
-        pass
+        return row
 
     def _row_key_mapping(self, row: dict, field_name_2_new_field_name: dict = None) -> dict:
         where = 'crawl_request.CrawlRequest._row_key_mapping'
@@ -170,6 +170,8 @@ class AbstractCrawlRequest:
 
     @abstractmethod
     def _row_post_processor(self, row: dict):
+        row['logId'] = self.log_id
+        row['createTime'] = getLocalDate()
         return row
 
     @abstractmethod
@@ -194,9 +196,6 @@ class AbstractCrawlRequest:
         if not self._prep_request_flag:
             log(self.logger, 'debug', where, f"执行爬取工作之前的处理_prep_request")
             self._prep_request()
-        log(self.logger, 'debug', where, '设置请求参数')
-        # 设置将要执行的请求状态数据
-        self._next_request()
         get_params_info = lambda \
                 x: f"当前请求的{x}:{self.request[x] if self.request.get(x, None) else None}" if self.request.get(
             x, None) else ''
@@ -204,9 +203,13 @@ class AbstractCrawlRequest:
             f'{get_params_info("url")} {get_params_info("data")} {get_params_info("json")} {get_params_info("method")}')
         # 执行请求操作
         log(self.logger, 'debug', where, '执行请求操作')
+
+        # 111111111111111
         response = self._do_request()
-        log(self.logger, 'info', where, f'请求响应结果:{response.status_code}')
+        if response:
+            log(self.logger, 'info', where, f'请求响应结果:{response.status_code}')
         time.sleep(self.sleep_second)
+        # 222222222222222
         rows: List[dict] = self._parse_response(response)
         log(self.logger, 'info', where, f"解析请求结果:{len(rows)}条数据")
         count = 1
@@ -222,9 +225,11 @@ class AbstractCrawlRequest:
             self.processed_rows.append(new_row)
             log(self.logger, 'debug', where, f'本次爬虫已处理{len(self.processed_rows)}条数据')
             count += 1
+        # 33333333333333
         self.end_flag = self._if_end(response)
         if self.end_flag:
             return
+        # 4444444444444
         self._next_request()
 
     def _do_crawl(self):

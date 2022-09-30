@@ -1,6 +1,7 @@
 import requests
 from requests import Session
 
+from crawl import MutiThreadCrawl
 from utils.custom_exception import raise_exception, cast_exception, CustomException
 from utils.db_utils import check_table_exists, create_table, insert_to_db, update_else_insert_to_db, add_fields
 from utils.mark_log import getLocalDate
@@ -12,11 +13,15 @@ from zggdyh_config import TARGET_TABLE_PROCESSED, STR_TYPE, NUMBER_TYPE, SEQUENC
 
 
 class SpiderFlowImpl(SpiderFlow):
-    def callback(self, conn, cursor, session: Session, log_id: int, **kwargs):
+
+    def callback(self, session: Session, log_id: int, muti_thread_crawl: MutiThreadCrawl, **kwargs):
         yqsy_rows = process_yqsy_type(session)
         yjjz_rows = process_yjjz_type(session)
         jzx_rows = process_jzx_type(session)
         rows = yqsy_rows + yjjz_rows + jzx_rows
+        poll = muti_thread_crawl.poll
+        conn = poll.connection()
+        cursor = conn.cursor()
         # 检查表是否存在
         flag = check_table_exists(TARGET_TABLE_PROCESSED, cursor)
         # 不存在的话 需要先建表

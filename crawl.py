@@ -2,10 +2,8 @@
 import importlib
 import sys
 import os
-import configparser
 import threading
 import time
-from collections import OrderedDict
 from logging import Logger
 from typing import Optional
 
@@ -14,63 +12,10 @@ from dbutils.pooled_db import PooledDB
 from utils.custom_exception import CustomException
 from utils.db_utils import get_db_poll
 from utils.logging_utils import get_logger, log
-from utils.string_utils import remove_space
 import inspect
-
+from arg_parser import config_dict,
 rootpath = os.path.dirname(__file__)
 sys.path.extend([rootpath, ])
-
-
-def parse_crawl_cfg() -> dict:
-    config = configparser.ConfigParser()
-    config.read('crawl.cfg', encoding='utf-8')
-    config_dict = {}
-    for section_name in config._sections.keys():
-        ordered_dict: OrderedDict = config._sections[section_name]
-        if section_name == 'thread':
-            # 解析thread
-            for key in ordered_dict.keys():
-                try:
-                    config_dict[f"thread.{key}"] = int(ordered_dict[key])
-                except Exception as e:
-                    raise CustomException(None, msg=f"无法解析thread:thread_num必须为INT类型")
-        if section_name == 'pool.oracle':
-            # 解析线程池
-            try:
-                user = remove_space(ordered_dict['user'])
-                password = remove_space(ordered_dict['password'])
-                dsn = remove_space(ordered_dict['dsn'])
-                if user and password and dsn:
-                    config_dict['db_type'] = 'oracle'
-                    config_dict['pool.oracle.user'] = user
-                    config_dict['pool.oracle.password'] = password
-                    config_dict['pool.oracle.dsn'] = dsn
-                    config_dict['poll_flag'] = True
-            except Exception as e:
-                pass
-
-            if 'poll_flag' not in config_dict.keys() or not config_dict['poll_flag']:
-                raise CustomException(None, f"配置数据库连接池失败")
-        if section_name == 'poll.mysql':
-            pass
-        elif section_name == 'sleep':
-            try:
-                sleep_second = int(ordered_dict['sleep_second'])
-                config_dict['sleep.sleep_second'] = sleep_second
-            except Exception as e:
-                raise CustomException(None, f"无法解析sleep:sleep_second必须为INT类型")
-        elif section_name == 'crawl':
-            if 'crawl' not in config_dict:
-                config_dict['crawl'] = []
-                config_dict['crawl.modules'] = []
-
-            for key in ordered_dict.keys():
-                config_dict['crawl'].append((key, ordered_dict[key]))
-                config_dict['crawl.modules'].append(ordered_dict[key])
-        elif section_name == 'logger':
-            for key in ordered_dict.keys():
-                config_dict[f'logger.{key}'] = ordered_dict[key]
-    return config_dict
 
 
 class MutiThreadCrawl:
@@ -151,31 +96,34 @@ if __name__ == '__main__':
     poll = get_db_poll()
     # 获取一个logger对象
     current_module_name = sys.modules[__name__].__name__  # __main__
-    logger: Optional[Logger] = get_logger(log_name=config_dict['logger.name'],
-                                          log_level=config_dict['logger.level'],
-                                          log_modules=config_dict['logger.modules'],
+    logger_config = config_dict['logger']
+    logger: Optional[Logger] = get_logger(log_name=logger_config['name'],
+                                          log_level=logger_config['level'],
+                                          log_modules=logger_config['modules'],
                                           module_name=current_module_name)
     func_list = []
     try:
         # 将所有需要执行的函数放入crawl_queue列表中
-        for crawl in config_dict['crawl']:
+        crawl_module_names = []
+        for crawl_module, crawl_func_name in config_dict['crawl'].items():
             threads = []
             try:
-                crawl_module = importlib.import_module(crawl[0])
+                crawl_module_names.append(crawl_module)
+                crawl_module = importlib.import_module(crawl_module)
                 for k, v in inspect.getmembers(crawl_module):
-                    if k == crawl[1]:
+                    if k == crawl_func_name:
                         func_list.append(v)
                         continue
             except Exception as e:
-                raise CustomException(None, f'无法导入{crawl[0]}模块')
-        muti_thread_crawl = MutiThreadCrawl(max_thread=config_dict['thread.thread_num'],
+                raise CustomException(None, f'无法导入{crawl_module}模块')
+        muti_thread_crawl = MutiThreadCrawl(max_thread=config_dict['thread']['thread_num'],
                                             poll=poll,
                                             config_dict=config_dict,
                                             logger=logger)
-        for func, thread_name in zip(func_list, config_dict['crawl']):
+        for func, thread_name in zip(func_list, crawl_module_names):
             muti_thread_crawl.threads.append(threading.Thread(target=muti_thread_crawl.wrapper_func,
                                                               args=[func, muti_thread_crawl],
-                                                              name=thread_name[0]))
+                                                              name=thread_name))
         daemon_thread = threading.Thread(target=muti_thread_crawl.daemon_thread, name='starter')
         daemon_thread.start()
         daemon_thread.join()

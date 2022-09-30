@@ -18,13 +18,15 @@ class SpiderFlowImpl(SpiderFlow):
                                      muti_thread_crawl=muti_thread_crawl,
                                      **kwargs)
         try:
-
+            xyyh_crawl_pc.do_crawl()
             xyyh_crawl_mobile.do_crawl()
+            xyyh_crawl_mobile.processed_rows = xyyh_crawl_mobile.processed_rows + xyyh_crawl_pc.processed_rows
             xyyh_crawl_mobile.do_save()
         except Exception as e:
             raise e
         finally:
             xyyh_crawl_mobile.close()
+            xyyh_crawl_pc.close()
 
 
 def do_crawl(self: MutiThreadCrawl):

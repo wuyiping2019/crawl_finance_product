@@ -260,7 +260,7 @@ def process_xyyh_prd_list():
             # 此时index已经更新 重新进入产品展示页之后 继续处理下一条数据
             enter_all_prd(driver)
         time.sleep(SLEEP_SECOND)
-    return driver,rows
+    return driver, rows
 
 
 if __name__ == '__main__':
