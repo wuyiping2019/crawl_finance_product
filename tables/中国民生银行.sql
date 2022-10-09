@@ -45,7 +45,7 @@ truncate table ip_bank_zgmsyh_personal;
 select count(1)
 from ip_bank_zgmsyh_personal;
 select *
-from ip_bank_zgmsyh_personal
+from ip_bank_zgmsyh_personal order by createTime desc ;
 where logId = 260
   and dwjz is not null
 order by createTime desc;
@@ -56,5 +56,6 @@ order by id desc;
 select *
 from SPIDER_LOG
 order by id desc;
-select count(1) from ip_bank_zgmsyh_personal a where a.logId = 391
+select count(1) from ip_bank_zgmsyh_personal a where a.logId = 391;
+show tables;
 

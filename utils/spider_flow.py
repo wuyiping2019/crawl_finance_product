@@ -2,6 +2,7 @@ import abc
 from inspect import isfunction
 
 import requests
+from cx_Oracle import Connection
 from requests import Session
 
 from utils.db_utils import get_conn_oracle, close
