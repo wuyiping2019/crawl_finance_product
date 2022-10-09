@@ -1,8 +1,8 @@
 import json
-from utils.db_utils import init_oracle, get_conn_oracle, close
-from utils.mark_log import insertLogToDB, mark_start_log, mark_success_log, mark_failure_log, getLocalDate, \
+from crawl_utils.db_utils import init_oracle, get_conn_oracle, close
+from crawl_utils.mark_log import insertLogToDB, mark_start_log, mark_success_log, mark_failure_log, getLocalDate, \
     get_generated_log_id, updateLogToDB, get_write_count
-from utils.global_config import DB_ENV
+from crawl_utils.global_config import DB_ENV
 
 import requests
 

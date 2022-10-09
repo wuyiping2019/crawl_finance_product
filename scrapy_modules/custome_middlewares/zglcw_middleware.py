@@ -5,7 +5,7 @@ from scrapy.http import Response
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from scrapy_modules.spider_config import SpiderEnum
-from utils.zglcw import parse_zglcw_table
+from crawl_utils.zglcw import parse_zglcw_table
 
 
 # 处理来自url指向的是中国理财网的请求

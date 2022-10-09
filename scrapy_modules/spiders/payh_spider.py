@@ -11,11 +11,11 @@ from selenium.webdriver.common.by import By
 
 from scrapy_modules.items import PayhItem, ZGLCWItem
 from scrapy_modules.spider_config import SpiderEnum
-from utils.db_utils import get_conn, close
-from utils.html_utils import parse_table
-from utils.mark_log import mark_start_log, getLocalDate, get_generated_log_id, mark_success_log, mark_failure_log
-from utils.selenium_utils import get_driver
-from utils.zglcw import parse_zglcw_table, ZGLCW_REQUEST_URL
+from crawl_utils.db_utils import get_conn, close
+from crawl_utils.html_utils import parse_table
+from crawl_utils.mark_log import mark_start_log, getLocalDate, get_generated_log_id, mark_success_log, mark_failure_log
+from crawl_utils.selenium_utils import get_driver
+from crawl_utils.zglcw import parse_zglcw_table, ZGLCW_REQUEST_URL
 
 
 @dataclass

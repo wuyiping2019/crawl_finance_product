@@ -12,7 +12,8 @@
     <option name="namespacePackageFolders">
       <list>
         <option value="$MODULE_DIR$/scrapy_modules/custome_middlewares" />
-        <option value="$MODULE_DIR$/scrapy_modules/log" />
+        <option value="$MODULE_DIR$/中国光大银行_完成" />
+        <option value="$MODULE_DIR$/中信银行_完成" />
       </list>
     </option>
   </component>

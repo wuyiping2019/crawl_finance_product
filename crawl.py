@@ -5,28 +5,24 @@ import os
 import threading
 import time
 from logging import Logger
-from typing import Optional
 
-from dbutils.pooled_db import PooledDB
-
-from utils.custom_exception import CustomException
-from utils.db_utils import get_db_poll
-from utils.logging_utils import get_logger, log
+import 中国光大银行_完成
+from crawl_utils.custom_exception import CustomException
 import inspect
-from arg_parser import config_dict,
+from config_parser import crawl_config, CrawlConfig
+from crawl_utils.logging_utils import get_logger
+
 rootpath = os.path.dirname(__file__)
 sys.path.extend([rootpath, ])
 
 
 class MutiThreadCrawl:
-    def __init__(self, max_thread: int, poll: PooledDB, config_dict: dict, logger: Optional[Logger]):
+    def __init__(self, config: CrawlConfig, crawl_logger: Logger):
         self.lock = threading.RLock()
         self.__thread_num = 0
-        self.max_thread = max_thread
-        self.poll = poll
-        self.config_dict = config_dict
-        self.logger = logger
+        self.config = config
         self.threads = []
+        self.logger = crawl_logger
 
     def get_thread_num(self) -> int:
         thread_num = 0
@@ -74,16 +70,16 @@ class MutiThreadCrawl:
         thread_func(*args)
         # 线程任务执行完毕 线程数 - 1
         self.set_thread_num(self.get_thread_num() - 1)
-        log(self.logger, 'info', where, f'{threading.current_thread().name}线程完成,当前执行线程数:{self.get_thread_num()}')
+        self.logger.info(f'{threading.current_thread().name}线程完成,当前执行线程数:{self.get_thread_num()}')
 
     def daemon_thread(self):
-        log(self.logger, 'info', '__main__.daemon_thread', '启动守护线程')
+        self.logger.info('启动守护线程')
         while True:
             if self.get_remaining_thread_num() <= 0 and self.get_thread_num() == 0:
                 return
-            if self.get_remaining_thread_num() > 0 and self.get_thread_num() < self.max_thread:
+            if self.get_remaining_thread_num() > 0 and self.get_thread_num() < self.config.max_thread:
                 thread = self.pop_thread()
-                log(self.logger, 'info', '__main__.daemon_thread', f'守护线程启动{threading.current_thread().name}爬虫进程')
+                self.logger.info(f'守护线程启动{threading.current_thread().name}爬虫进程')
                 # 启动一个线程 线程数 + 1
                 thread.start()
                 self.set_thread_num(self.get_thread_num() + 1)  # 线程数 + 1
@@ -91,21 +87,21 @@ class MutiThreadCrawl:
 
 
 if __name__ == '__main__':
-    where = 'crawl.__main__'
-    config_dict = parse_crawl_cfg()
-    poll = get_db_poll()
-    # 获取一个logger对象
-    current_module_name = sys.modules[__name__].__name__  # __main__
-    logger_config = config_dict['logger']
-    logger: Optional[Logger] = get_logger(log_name=logger_config['name'],
-                                          log_level=logger_config['level'],
-                                          log_modules=logger_config['modules'],
-                                          module_name=current_module_name)
+    """
+    核心逻辑：以多线程的方式调用配置在crawl.cfg中[crawl]区域中的模块
+    [crawl]区域以module=func的方式进行配置
+    调用func的时候会自动传入解析crawl.cfg的CrawlConfig对象(该对象的解析逻辑在config_parser模块中)
+    """
+    logger = get_logger(name=__name__,
+                        log_level=crawl_config.log_level,
+                        log_modules=crawl_config.log_modules,
+                        filename=crawl_config.log_filename)
+    muti_thread_crawl = MutiThreadCrawl(config=crawl_config, crawl_logger=logger)
     func_list = []
     try:
         # 将所有需要执行的函数放入crawl_queue列表中
         crawl_module_names = []
-        for crawl_module, crawl_func_name in config_dict['crawl'].items():
+        for crawl_module, crawl_func_name in crawl_config.config['crawl'].items():
             threads = []
             try:
                 crawl_module_names.append(crawl_module)
@@ -116,22 +112,20 @@ if __name__ == '__main__':
                         continue
             except Exception as e:
                 raise CustomException(None, f'无法导入{crawl_module}模块')
-        muti_thread_crawl = MutiThreadCrawl(max_thread=config_dict['thread']['thread_num'],
-                                            poll=poll,
-                                            config_dict=config_dict,
-                                            logger=logger)
+
         for func, thread_name in zip(func_list, crawl_module_names):
             muti_thread_crawl.threads.append(threading.Thread(target=muti_thread_crawl.wrapper_func,
-                                                              args=[func, muti_thread_crawl],
+                                                              args=[func, crawl_config],
                                                               name=thread_name))
         daemon_thread = threading.Thread(target=muti_thread_crawl.daemon_thread, name='starter')
         daemon_thread.start()
         daemon_thread.join()
+
     except Exception as e:
         raise e
     finally:
-        log(logger, 'info', where, '所有线程爬虫线程执行完毕,准备关闭数据库连接池')
-        if poll:
-            log(logger, 'info', where, '关闭数据库连接池')
-            poll.close()
-            log(logger, 'info', where, '成功关闭数据库连接池')
+        logger.info('所有线程爬虫线程执行完毕,准备关闭数据库连接池')
+        if crawl_config.db_pool:
+            logger.info('关闭数据库连接池')
+            crawl_config.db_pool.close()
+            logger.info('成功关闭数据库连接池')

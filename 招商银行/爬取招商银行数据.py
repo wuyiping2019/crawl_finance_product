@@ -1,20 +1,23 @@
 import pymysql
 from pymysql.converters import escape_string
-from utils.selenium_utils import get_driver, open_chrome
+
+from config_parser import CrawlConfig, crawl_config
+from crawl_utils.selenium_utils import get_driver, open_chrome
 import json
-from utils.global_config import DB_ENV, init_oracle
-from utils.db_utils import get_conn_oracle, close
-from utils.mark_log import mark_start_log, mark_success_log, mark_failure_log, getLocalDate, get_write_count, \
+from crawl_utils.global_config import DB_ENV, init_oracle, get_table_name
+from crawl_utils.db_utils import get_conn_oracle, close
+from crawl_utils.mark_log import mark_start_log, mark_success_log, mark_failure_log, getLocalDate, get_write_count, \
     get_generated_log_id, insertLogToDB
 
 NAME = '招商银行'
-TABLE_NAME = 'ip_bank_cmb_personal'
+MASK = 'zsyh'
+TABLE_NAME = get_table_name(MASK)
 URL = r'http://www.cmbchina.com/cfweb/Personal/'
 if DB_ENV == 'ORACLE':
     init_oracle()
 
-if __name__ == '__main__':
 
+def do_crawl(config: CrawlConfig):
     conn = None
     cursor = None
     driver = None
@@ -27,7 +30,6 @@ if __name__ == '__main__':
         mark_start_log(NAME, getLocalDate(), cursor)
         # 获取日志id
         generated_log_id = get_generated_log_id(NAME, cursor)
-
         driver = get_driver()
         open_chrome(driver, URL)
         with open('crawler.js', encoding='utf-8') as f:
@@ -61,3 +63,7 @@ if __name__ == '__main__':
         close([driver, cursor, conn])
         if driver:
             driver.quit()
+
+
+if __name__ == '__main__':
+    do_crawl(config=crawl_config)
