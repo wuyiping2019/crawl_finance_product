@@ -30,6 +30,7 @@ class PayhPCCrawlRequest(ConfigurableCrawlRequest):
         self.check_props = ['logId', 'cpbm', 'bank']
 
     def _pre_crawl(self):
+        logger.info(f"准备爬取{self.name}的数据")
         if self.crawl_config.state == 'DEV':
             self.total_page = 1
         self.mask = MASK

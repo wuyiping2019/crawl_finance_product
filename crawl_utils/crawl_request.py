@@ -44,6 +44,7 @@ class CrawlRequestExceptionEnum(Enum):
         self.msg = msg
 
     TABLE_NULL_EXCEPTION = 1, '无法获取需要将数据保存的表:mask和save_table不能同时为空'
+    CHECK_PROPS_NULL_EXCEPTION = 2, '执行更新否则插入操作,需要指定判断一条数据在表中唯一标识的字段列表'
 
 
 class AbstractCrawlRequest:
@@ -251,7 +252,16 @@ class CustomCrawlRequest(AbstractCrawlRequest):
         logger.info("开始循环爬取数据:")
         while not self.end_flag:
             self._config_params()
-            logger.info("完成请求参数的配置:%s" % self.request)
+            if isinstance(self.request, dict):
+                logger.info("完成请求参数的配置:")
+                logger.info("url:%s" % self.request.get('url', ''))
+                logger.info("method:%s" % self.request.get('method', ''))
+                if self.request.get('data', ''):
+                    logger.info("data:%s" % self.request.get('data', ''))
+                if self.request.get('json', ''):
+                    logger.info("json:%s" % self.request.get('json', ''))
+                if self.request.get('params', ''):
+                    logger.info("params:%s" % self.request.get('params', ''))
             response = self._do_request()
             if response.status_code == 200:
                 logger.info("成功获取响应结果,响应状态码:%s" % response.status_code)
@@ -283,8 +293,6 @@ class CustomCrawlRequest(AbstractCrawlRequest):
         count = 1
         new_rows = []
         for fil in self.filters:
-            if count == 5:
-                print(count)
             new_rows = []
             if not fil:
                 logger.debug(f"filter-{count}-{self.name}为空")
@@ -339,7 +347,11 @@ class CustomCrawlRequest(AbstractCrawlRequest):
         if not self.mask and not self.save_table:
             raise CrawlRequestException(
                 CrawlRequestExceptionEnum.TABLE_NULL_EXCEPTION.code,
-                CrawlRequestExceptionEnum.TABLE_NULL_EXCEPTION.msg
+                CrawlRequestExceptionEnum.TABLE_NULL_EXCEPTION.msg)
+        if not self.check_props:
+            raise CrawlRequestException(
+                CrawlRequestExceptionEnum.CHECK_PROPS_NULL_EXCEPTION.code,
+                CrawlRequestExceptionEnum.CHECK_PROPS_NULL_EXCEPTION.msg
             )
         conn = None
         cursor = None
