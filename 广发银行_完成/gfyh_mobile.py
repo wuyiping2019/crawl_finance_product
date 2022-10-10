@@ -28,7 +28,7 @@ class GfyhMobileCrawlRequest(CustomCrawlRequest):
         self.filters.append(mobile_filter2)
         self.filters.append(mobile_filter3)
 
-    def _process_rows(self, rows: List[dict]) -> List[dict]:
+    def _process_post_rows(self, rows: List[dict]) -> List[dict]:
         for row in rows:
             row['logId'] = self.log_id
             row['createTime'] = getLocalDate()

@@ -3,6 +3,7 @@ from __future__ import annotations
 import time
 import types
 from abc import abstractmethod
+from enum import Enum
 from typing import List, Dict
 
 import requests
@@ -24,9 +25,25 @@ logger = get_logger(name=__name__,
 
 
 class CrawlRequestException(Exception):
+    """"
+    code及其对应msg信息在CrawlRequestExceptionEnum中
+    """
+
+    def __init__(self, code, msg):
+        """
+        :param code:错误唯一
+        :param msg: 错误信息
+        """
+        self.code = code
+        self.msg = msg
+
+
+class CrawlRequestExceptionEnum(Enum):
     def __init__(self, code, msg):
         self.code = code
         self.msg = msg
+
+    TABLE_NULL_EXCEPTION = 1, '无法获取需要将数据保存的表:mask和save_table不能同时为空'
 
 
 class AbstractCrawlRequest:
@@ -318,6 +335,12 @@ class CustomCrawlRequest(AbstractCrawlRequest):
         pass
 
     def do_save(self):
+        # 检测mask和save_table不能同时为空
+        if not self.mask and not self.save_table:
+            raise CrawlRequestException(
+                CrawlRequestExceptionEnum.TABLE_NULL_EXCEPTION.code,
+                CrawlRequestExceptionEnum.TABLE_NULL_EXCEPTION.msg
+            )
         conn = None
         cursor = None
         table_exists_flag = False

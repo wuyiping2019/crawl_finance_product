@@ -22,6 +22,21 @@ FIELD_VALUE_MAPPING = {
         '2': '存续'
     },
 }
+PC_HEADERS = {
+    "accept": "*/*", "accept-encoding": "gzip, deflate, br",
+    "accept-language": "zh-CN,zh;q=0.9",
+    "content-length": "99",
+    "content-type": "application/x-www-form-urlencoded;charset=utf-8",
+    "cookie": "WEBTRENDS_ID=298ff81b8809ac6d2841663310821456; NGWhitelist=100601,100602; fp_ver=4.7.9; BSFIT4_OkLJUJ=FHk977HoFNHTJYk8DeBGXdlDCJWt5Pcn; WT-FPC=id=298ff81b8809ac6d2841663310821456lv=1663310826636ss=1663310821456fs=1663310821456pn=4vn=1; BSFIT4_EXPIRATION=1663678913274; BSFIT4_DEVICEID=GfP-kTREi3De0HCgo2ur2MZ13Bex9EvaFeVCW8v7RDXIY8ZxI-THQ2ZI11BDzmkRU0HU4cPFXpK534XfD1802lNGifw2pDwx8FOFidsyWolgILVtvuKlRg59V7XPTcS_JSxn2wOiMc8SVjo56uBNdCP9rKthAYhX",
+    "origin": "https//ebank.pingan.com.cn",
+    "referer": "https//ebank.pingan.com.cn/aum/common/sales_list/index.html?initPage=true",
+    "sec-ch-ua": "\"Google Chrome\";v=\"95\", \"Chromium\";v=\"95\", \";Not A Brand\";v=\"99\"",
+    "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": "\"Windows\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin",
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36"
+}
+PC_METHOD = 'POST'
 PC_REQUESTS_ITER = [
     # 代销产品-保险
     {
@@ -37,22 +52,7 @@ PC_REQUESTS_ITER = [
                 'channelCode': 'C0002',
                 'access_source': 'PC',
             },
-            'headers': {"accept": "*/*", "accept-encoding": "gzip, deflate, br",
-                        "accept-language": "zh-CN,zh;q=0.9",
-                        "content-length": "99",
-                        "content-type": "application/x-www-form-urlencoded;charset=utf-8",
-                        "cookie": "WEBTRENDS_ID=298ff81b8809ac6d2841663310821456; NGWhitelist=100601,100602; fp_ver=4.7.9; BSFIT4_OkLJUJ=FHk977HoFNHTJYk8DeBGXdlDCJWt5Pcn; WT-FPC=id=298ff81b8809ac6d2841663310821456lv=1663310826636ss=1663310821456fs=1663310821456pn=4vn=1; BSFIT4_EXPIRATION=1663678913274; BSFIT4_DEVICEID=GfP-kTREi3De0HCgo2ur2MZ13Bex9EvaFeVCW8v7RDXIY8ZxI-THQ2ZI11BDzmkRU0HU4cPFXpK534XfD1802lNGifw2pDwx8FOFidsyWolgILVtvuKlRg59V7XPTcS_JSxn2wOiMc8SVjo56uBNdCP9rKthAYhX",
-                        "origin": "https//ebank.pingan.com.cn",
-                        "referer": "https//ebank.pingan.com.cn/aum/common/sales_list/index.html?initPage=true",
-                        "sec-ch-ua": "\"Google Chrome\";v=\"95\", \"Chromium\";v=\"95\", \";Not A Brand\";v=\"99\"",
-                        "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": "\"Windows\"",
-                        "sec-fetch-dest": "empty",
-                        "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin",
-                        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36"
-                        },
-
         },
-        'identifier': 'payh',
         'field_name_2_new_field_name': {
             'investmentScope': FIELD_MAPPINGS['投资性质'],
             'riskLevel': FIELD_MAPPINGS['风险等级'],
@@ -61,7 +61,6 @@ PC_REQUESTS_ITER = [
             'prdCode': FIELD_MAPPINGS['产品编码'],
             'status': FIELD_MAPPINGS['产品状态']
         },
-        'check_props': ['logId', 'cpbm'],
         'title': '代销产品-保险'
     },
     # 代销产品-保险金信托
@@ -78,30 +77,6 @@ PC_REQUESTS_ITER = [
                 'channelCode': 'C0002',
                 'access_source': 'PC',
             },
-            'headers': {"accept": "*/*", "accept-encoding": "gzip, deflate, br",
-                        "accept-language": "zh-CN,zh;q=0.9",
-                        "content-length": "99",
-                        "content-type": "application/x-www-form-urlencoded;charset=utf-8",
-                        "cookie": "WEBTRENDS_ID=298ff81b8809ac6d2841663310821456; NGWhitelist=100601,100602; fp_ver=4.7.9; BSFIT4_OkLJUJ=FHk977HoFNHTJYk8DeBGXdlDCJWt5Pcn; WT-FPC=id=298ff81b8809ac6d2841663310821456lv=1663310826636ss=1663310821456fs=1663310821456pn=4vn=1; BSFIT4_EXPIRATION=1663678913274; BSFIT4_DEVICEID=GfP-kTREi3De0HCgo2ur2MZ13Bex9EvaFeVCW8v7RDXIY8ZxI-THQ2ZI11BDzmkRU0HU4cPFXpK534XfD1802lNGifw2pDwx8FOFidsyWolgILVtvuKlRg59V7XPTcS_JSxn2wOiMc8SVjo56uBNdCP9rKthAYhX",
-                        "origin": "https//ebank.pingan.com.cn",
-                        "referer": "https//ebank.pingan.com.cn/aum/common/sales_list/index.html?initPage=true",
-                        "sec-ch-ua": "\"Google Chrome\";v=\"95\", \"Chromium\";v=\"95\", \";Not A Brand\";v=\"99\"",
-                        "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": "\"Windows\"",
-                        "sec-fetch-dest": "empty",
-                        "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin",
-                        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36"
-                        },
-
-        },
-        'identifier': 'payh',
-        'field_value_mapping': {
-            'minAmount': lambda x: str(x) + '元' if remove_space(str(x)) else '',
-            'riskLevel': {
-                '1': '低等风险',
-                '2': '中低风险',
-                '3': '中等风险',
-                '4': '中高风险'
-            }
         },
         'field_name_2_new_field_name': {
             'riskLevel': FIELD_MAPPINGS['风险等级'],
@@ -109,7 +84,6 @@ PC_REQUESTS_ITER = [
             'productType': FIELD_MAPPINGS['投资性质'],
             'issuer': FIELD_MAPPINGS['管理人']
         },
-        'check_props': ['logId', 'cpbm'],
         'title': '代销产品-保险金信托'
     },
     # 本行产品-对公结构性存款
@@ -126,22 +100,7 @@ PC_REQUESTS_ITER = [
                 'channelCode': 'C0002',
                 'access_source': 'PC',
             },
-            'headers': {"accept": "*/*", "accept-encoding": "gzip, deflate, br",
-                        "accept-language": "zh-CN,zh;q=0.9",
-                        "content-length": "99",
-                        "content-type": "application/x-www-form-urlencoded;charset=utf-8",
-                        "cookie": "WEBTRENDS_ID=298ff81b8809ac6d2841663310821456; NGWhitelist=100601,100602; fp_ver=4.7.9; BSFIT4_OkLJUJ=FHk977HoFNHTJYk8DeBGXdlDCJWt5Pcn; WT-FPC=id=298ff81b8809ac6d2841663310821456lv=1663310826636ss=1663310821456fs=1663310821456pn=4vn=1; BSFIT4_EXPIRATION=1663678913274; BSFIT4_DEVICEID=GfP-kTREi3De0HCgo2ur2MZ13Bex9EvaFeVCW8v7RDXIY8ZxI-THQ2ZI11BDzmkRU0HU4cPFXpK534XfD1802lNGifw2pDwx8FOFidsyWolgILVtvuKlRg59V7XPTcS_JSxn2wOiMc8SVjo56uBNdCP9rKthAYhX",
-                        "origin": "https//ebank.pingan.com.cn",
-                        "referer": "https//ebank.pingan.com.cn/aum/common/sales_list/index.html?initPage=true",
-                        "sec-ch-ua": "\"Google Chrome\";v=\"95\", \"Chromium\";v=\"95\", \";Not A Brand\";v=\"99\"",
-                        "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": "\"Windows\"",
-                        "sec-fetch-dest": "empty",
-                        "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin",
-                        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36"
-                        },
-
         },
-        'identifier': 'payh',
         'field_name_2_new_field_name': {
             'minAmount': FIELD_MAPPINGS['起购金额'],
             'riskLevel': FIELD_MAPPINGS['风险等级'],
@@ -154,7 +113,6 @@ PC_REQUESTS_ITER = [
             'tranBankSet': FIELD_MAPPINGS['销售渠道'],
             'productNo': FIELD_MAPPINGS['登记编码']
         },
-        'check_props': ['logId', 'cpbm'],
         'title': '本行产品-对公结构性存款'
     },
     # 本行产品-公募基金
@@ -171,39 +129,6 @@ PC_REQUESTS_ITER = [
                 'channelCode': 'C0002',
                 'access_source': 'PC',
             },
-            'headers': {"accept": "*/*", "accept-encoding": "gzip, deflate, br",
-                        "accept-language": "zh-CN,zh;q=0.9",
-                        "content-length": "99",
-                        "content-type": "application/x-www-form-urlencoded;charset=utf-8",
-                        "cookie": "WEBTRENDS_ID=298ff81b8809ac6d2841663310821456; NGWhitelist=100601,100602; fp_ver=4.7.9; BSFIT4_OkLJUJ=FHk977HoFNHTJYk8DeBGXdlDCJWt5Pcn; WT-FPC=id=298ff81b8809ac6d2841663310821456lv=1663310826636ss=1663310821456fs=1663310821456pn=4vn=1; BSFIT4_EXPIRATION=1663678913274; BSFIT4_DEVICEID=GfP-kTREi3De0HCgo2ur2MZ13Bex9EvaFeVCW8v7RDXIY8ZxI-THQ2ZI11BDzmkRU0HU4cPFXpK534XfD1802lNGifw2pDwx8FOFidsyWolgILVtvuKlRg59V7XPTcS_JSxn2wOiMc8SVjo56uBNdCP9rKthAYhX",
-                        "origin": "https//ebank.pingan.com.cn",
-                        "referer": "https//ebank.pingan.com.cn/aum/common/sales_list/index.html?initPage=true",
-                        "sec-ch-ua": "\"Google Chrome\";v=\"95\", \"Chromium\";v=\"95\", \";Not A Brand\";v=\"99\"",
-                        "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": "\"Windows\"",
-                        "sec-fetch-dest": "empty",
-                        "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin",
-                        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36"
-                        },
-
-        },
-        'identifier': 'payh',
-        'field_value_mapping': {
-            'minAmount': lambda x: str(x) + '元',
-            'rateType': {
-                'BF': '保本浮动收益',
-                'FF': '非保本浮动收益'
-            },
-            'riskLevel': {
-                '1': '低等风险',
-                '2': '中低风险',
-                '3': '中等风险',
-                '4': '中高风险'
-            },
-            'saleStatus': {
-                '1': '在售',
-                '2': '存续',
-                '5': '停止申购'
-            },
         },
         'field_name_2_new_field_name': {
             'riskLevel': FIELD_MAPPINGS['风险等级'],
@@ -215,7 +140,6 @@ PC_REQUESTS_ITER = [
             'prdManager': FIELD_MAPPINGS['管理人'],
             'status': FIELD_MAPPINGS['产品状态']
         },
-        'check_props': ['logId', 'cpbm'],
         'title': '本行产品-公募基金'
     },
     # 代销产品-信托/资管计划及其他
@@ -232,30 +156,6 @@ PC_REQUESTS_ITER = [
                 'channelCode': 'C0002',
                 'access_source': 'PC',
             },
-            'headers': {"accept": "*/*", "accept-encoding": "gzip, deflate, br",
-                        "accept-language": "zh-CN,zh;q=0.9",
-                        "content-length": "99",
-                        "content-type": "application/x-www-form-urlencoded;charset=utf-8",
-                        "cookie": "WEBTRENDS_ID=298ff81b8809ac6d2841663310821456; NGWhitelist=100601,100602; fp_ver=4.7.9; BSFIT4_OkLJUJ=FHk977HoFNHTJYk8DeBGXdlDCJWt5Pcn; WT-FPC=id=298ff81b8809ac6d2841663310821456lv=1663310826636ss=1663310821456fs=1663310821456pn=4vn=1; BSFIT4_EXPIRATION=1663678913274; BSFIT4_DEVICEID=GfP-kTREi3De0HCgo2ur2MZ13Bex9EvaFeVCW8v7RDXIY8ZxI-THQ2ZI11BDzmkRU0HU4cPFXpK534XfD1802lNGifw2pDwx8FOFidsyWolgILVtvuKlRg59V7XPTcS_JSxn2wOiMc8SVjo56uBNdCP9rKthAYhX",
-                        "origin": "https//ebank.pingan.com.cn",
-                        "referer": "https//ebank.pingan.com.cn/aum/common/sales_list/index.html?initPage=true",
-                        "sec-ch-ua": "\"Google Chrome\";v=\"95\", \"Chromium\";v=\"95\", \";Not A Brand\";v=\"99\"",
-                        "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": "\"Windows\"",
-                        "sec-fetch-dest": "empty",
-                        "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin",
-                        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36"
-                        },
-
-        },
-        'identifier': 'payh',
-        'field_value_mapping': {
-            'minAmount': lambda x: str(x) + '元' if remove_space(str(x)) else '',
-            'riskLevel': {
-                '1': '低等风险',
-                '2': '中低风险',
-                '3': '中等风险',
-                '4': '中高风险'
-            }
         },
         'field_name_2_new_field_name': {
             'riskLevel': FIELD_MAPPINGS['风险等级'],
@@ -265,7 +165,6 @@ PC_REQUESTS_ITER = [
             'prdManager': FIELD_MAPPINGS['管理人'],
             'prdCode': FIELD_MAPPINGS['产品编码']
         },
-        'check_props': ['logId', 'cpbm'],
         'title': '代销产品-信托/资管计划及其他'
     },
     # 代销产品-理财子
@@ -282,30 +181,6 @@ PC_REQUESTS_ITER = [
                 'channelCode': 'C0002',
                 'access_source': 'PC',
             },
-            'headers': {"accept": "*/*", "accept-encoding": "gzip, deflate, br",
-                        "accept-language": "zh-CN,zh;q=0.9",
-                        "content-length": "99",
-                        "content-type": "application/x-www-form-urlencoded;charset=utf-8",
-                        "cookie": "WEBTRENDS_ID=298ff81b8809ac6d2841663310821456; NGWhitelist=100601,100602; fp_ver=4.7.9; BSFIT4_OkLJUJ=FHk977HoFNHTJYk8DeBGXdlDCJWt5Pcn; WT-FPC=id=298ff81b8809ac6d2841663310821456lv=1663310826636ss=1663310821456fs=1663310821456pn=4vn=1; BSFIT4_EXPIRATION=1663678913274; BSFIT4_DEVICEID=GfP-kTREi3De0HCgo2ur2MZ13Bex9EvaFeVCW8v7RDXIY8ZxI-THQ2ZI11BDzmkRU0HU4cPFXpK534XfD1802lNGifw2pDwx8FOFidsyWolgILVtvuKlRg59V7XPTcS_JSxn2wOiMc8SVjo56uBNdCP9rKthAYhX",
-                        "origin": "https//ebank.pingan.com.cn",
-                        "referer": "https//ebank.pingan.com.cn/aum/common/sales_list/index.html?initPage=true",
-                        "sec-ch-ua": "\"Google Chrome\";v=\"95\", \"Chromium\";v=\"95\", \";Not A Brand\";v=\"99\"",
-                        "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": "\"Windows\"",
-                        "sec-fetch-dest": "empty",
-                        "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin",
-                        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36"
-                        },
-
-        },
-        'identifier': 'payh',
-        'field_value_mapping': {
-            'minAmount': lambda x: str(x) + '元' if remove_space(str(x)) else '',
-            'riskLevel': {
-                '1': '低等风险',
-                '2': '中低风险',
-                '3': '中等风险',
-                '4': '中高风险'
-            }
         },
         'field_name_2_new_field_name': {
             'riskLevel': FIELD_MAPPINGS['风险等级'],
@@ -315,7 +190,6 @@ PC_REQUESTS_ITER = [
             'taCode': FIELD_MAPPINGS['TA编码'],
             'prdManager': FIELD_MAPPINGS['管理人'],
         },
-        'check_props': ['logId', 'cpbm'],
         'title': '代销产品-理财子'
     },
     # 本行产品-个人结构性存款
@@ -332,38 +206,6 @@ PC_REQUESTS_ITER = [
                 'channelCode': 'C0002',
                 'access_source': 'PC',
             },
-            'headers': {"accept": "*/*", "accept-encoding": "gzip, deflate, br",
-                        "accept-language": "zh-CN,zh;q=0.9",
-                        "content-length": "99",
-                        "content-type": "application/x-www-form-urlencoded;charset=utf-8",
-                        "cookie": "WEBTRENDS_ID=298ff81b8809ac6d2841663310821456; NGWhitelist=100601,100602; fp_ver=4.7.9; BSFIT4_OkLJUJ=FHk977HoFNHTJYk8DeBGXdlDCJWt5Pcn; WT-FPC=id=298ff81b8809ac6d2841663310821456lv=1663310826636ss=1663310821456fs=1663310821456pn=4vn=1; BSFIT4_EXPIRATION=1663678913274; BSFIT4_DEVICEID=GfP-kTREi3De0HCgo2ur2MZ13Bex9EvaFeVCW8v7RDXIY8ZxI-THQ2ZI11BDzmkRU0HU4cPFXpK534XfD1802lNGifw2pDwx8FOFidsyWolgILVtvuKlRg59V7XPTcS_JSxn2wOiMc8SVjo56uBNdCP9rKthAYhX",
-                        "origin": "https//ebank.pingan.com.cn",
-                        "referer": "https//ebank.pingan.com.cn/aum/common/sales_list/index.html?initPage=true",
-                        "sec-ch-ua": "\"Google Chrome\";v=\"95\", \"Chromium\";v=\"95\", \";Not A Brand\";v=\"99\"",
-                        "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": "\"Windows\"",
-                        "sec-fetch-dest": "empty",
-                        "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin",
-                        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36"
-                        },
-
-        },
-        'identifier': 'payh',
-        'field_value_mapping': {
-            'rateType': {
-                'BF': '保本浮动收益',
-                'FF': '非保本浮动收益',
-            },
-            'riskLevel': {
-                '1': '低等风险',
-                '2': '中低风险',
-                '3': '中等风险',
-                '4': '中高风险'
-            },
-            'saleStatus': {
-                '1': '存续',
-                '0': '在售',
-                '5': '停止申购'
-            },
         },
         'field_name_2_new_field_name': {
             'minAmount': FIELD_MAPPINGS['起购金额'],
@@ -373,7 +215,6 @@ PC_REQUESTS_ITER = [
             'saleStatus': FIELD_MAPPINGS['产品状态'],
             'prdCode': FIELD_MAPPINGS['产品编码'],
         },
-        'check_props': ['logId', 'cpbm'],
         'title': '本行产品-个人结构性存款'
     },
     # 代销产品-养老保险
@@ -390,34 +231,6 @@ PC_REQUESTS_ITER = [
                 'channelCode': 'C0002',
                 'access_source': 'PC',
             },
-            'headers': {"accept": "*/*", "accept-encoding": "gzip, deflate, br",
-                        "accept-language": "zh-CN,zh;q=0.9",
-                        "content-length": "99",
-                        "content-type": "application/x-www-form-urlencoded;charset=utf-8",
-                        "cookie": "WEBTRENDS_ID=298ff81b8809ac6d2841663310821456; NGWhitelist=100601,100602; fp_ver=4.7.9; BSFIT4_OkLJUJ=FHk977HoFNHTJYk8DeBGXdlDCJWt5Pcn; WT-FPC=id=298ff81b8809ac6d2841663310821456lv=1663310826636ss=1663310821456fs=1663310821456pn=4vn=1; BSFIT4_EXPIRATION=1663678913274; BSFIT4_DEVICEID=GfP-kTREi3De0HCgo2ur2MZ13Bex9EvaFeVCW8v7RDXIY8ZxI-THQ2ZI11BDzmkRU0HU4cPFXpK534XfD1802lNGifw2pDwx8FOFidsyWolgILVtvuKlRg59V7XPTcS_JSxn2wOiMc8SVjo56uBNdCP9rKthAYhX",
-                        "origin": "https//ebank.pingan.com.cn",
-                        "referer": "https//ebank.pingan.com.cn/aum/common/sales_list/index.html?initPage=true",
-                        "sec-ch-ua": "\"Google Chrome\";v=\"95\", \"Chromium\";v=\"95\", \";Not A Brand\";v=\"99\"",
-                        "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": "\"Windows\"",
-                        "sec-fetch-dest": "empty",
-                        "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin",
-                        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36"
-                        },
-
-        },
-        'identifier': 'payh',
-        'field_value_mapping': {
-            'status': {
-                '1': '存续',
-                '0': '在售',
-                '5': '停止申购'
-            },
-            'riskLevel': {
-                '1': '低等风险',
-                '2': '中低风险',
-                '3': '中等风险',
-                '4': '中高风险'
-            }
         },
         'field_name_2_new_field_name': {
             'riskLevel': FIELD_MAPPINGS['风险等级'],
@@ -428,7 +241,6 @@ PC_REQUESTS_ITER = [
             'prdManager': FIELD_MAPPINGS['管理人'],
             'status': FIELD_MAPPINGS['产品状态']
         },
-        'check_props': ['logId', 'cpbm'],
         'title': '代销产品-养老保险'
     },
     # 本行产品-银行理财
@@ -445,37 +257,6 @@ PC_REQUESTS_ITER = [
                 'channelCode': 'C0002',
                 'access_source': 'PC',
             },
-            'headers': {"accept": "*/*", "accept-encoding": "gzip, deflate, br",
-                        "accept-language": "zh-CN,zh;q=0.9",
-                        "content-length": "99",
-                        "content-type": "application/x-www-form-urlencoded;charset=utf-8",
-                        "cookie": "WEBTRENDS_ID=298ff81b8809ac6d2841663310821456; NGWhitelist=100601,100602; fp_ver=4.7.9; BSFIT4_OkLJUJ=FHk977HoFNHTJYk8DeBGXdlDCJWt5Pcn; WT-FPC=id=298ff81b8809ac6d2841663310821456lv=1663310826636ss=1663310821456fs=1663310821456pn=4vn=1; BSFIT4_EXPIRATION=1663678913274; BSFIT4_DEVICEID=GfP-kTREi3De0HCgo2ur2MZ13Bex9EvaFeVCW8v7RDXIY8ZxI-THQ2ZI11BDzmkRU0HU4cPFXpK534XfD1802lNGifw2pDwx8FOFidsyWolgILVtvuKlRg59V7XPTcS_JSxn2wOiMc8SVjo56uBNdCP9rKthAYhX",
-                        "origin": "https//ebank.pingan.com.cn",
-                        "referer": "https//ebank.pingan.com.cn/aum/common/sales_list/index.html?initPage=true",
-                        "sec-ch-ua": "\"Google Chrome\";v=\"95\", \"Chromium\";v=\"95\", \";Not A Brand\";v=\"99\"",
-                        "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": "\"Windows\"",
-                        "sec-fetch-dest": "empty",
-                        "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin",
-                        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36"
-                        },
-
-        },
-        'identifier': 'payh',
-        'field_value_mapping': {
-            'rateType': {
-                'FF': '非保本浮动收益',
-                'BF': '保本浮动收益'
-            },
-            'riskLevel': {
-                '1': '低等风险',
-                '2': '中低风险',
-                '3': '中等风险',
-                '4': '中高风险'
-            },
-            'saleStatus': {
-                '0': '在售',
-                '1': '存续'
-            },
         },
         'field_name_2_new_field_name': {
             'minAmount': FIELD_MAPPINGS['起购金额'],
@@ -486,7 +267,6 @@ PC_REQUESTS_ITER = [
             'productNo': FIELD_MAPPINGS['登记编码'],
             'rateType': FIELD_MAPPINGS['收益类型']
         },
-        'check_props': ['logId', 'cpbm'],
         'title': '本行产品-银行理财'
     },
     # 本行产品-银行公司理财
@@ -503,30 +283,6 @@ PC_REQUESTS_ITER = [
                 'channelCode': 'C0002',
                 'access_source': 'PC',
             },
-            'headers': {"accept": "*/*", "accept-encoding": "gzip, deflate, br",
-                        "accept-language": "zh-CN,zh;q=0.9",
-                        "content-length": "99",
-                        "content-type": "application/x-www-form-urlencoded;charset=utf-8",
-                        "cookie": "WEBTRENDS_ID=298ff81b8809ac6d2841663310821456; NGWhitelist=100601,100602; fp_ver=4.7.9; BSFIT4_OkLJUJ=FHk977HoFNHTJYk8DeBGXdlDCJWt5Pcn; WT-FPC=id=298ff81b8809ac6d2841663310821456lv=1663310826636ss=1663310821456fs=1663310821456pn=4vn=1; BSFIT4_EXPIRATION=1663678913274; BSFIT4_DEVICEID=GfP-kTREi3De0HCgo2ur2MZ13Bex9EvaFeVCW8v7RDXIY8ZxI-THQ2ZI11BDzmkRU0HU4cPFXpK534XfD1802lNGifw2pDwx8FOFidsyWolgILVtvuKlRg59V7XPTcS_JSxn2wOiMc8SVjo56uBNdCP9rKthAYhX",
-                        "origin": "https//ebank.pingan.com.cn",
-                        "referer": "https//ebank.pingan.com.cn/aum/common/sales_list/index.html?initPage=true",
-                        "sec-ch-ua": "\"Google Chrome\";v=\"95\", \"Chromium\";v=\"95\", \";Not A Brand\";v=\"99\"",
-                        "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": "\"Windows\"",
-                        "sec-fetch-dest": "empty",
-                        "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin",
-                        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36"
-                        },
-
-        },
-        'identifier': 'payh',
-        'field_value_mapping': {
-            'minAmount': lambda x: str(x) + '元',
-            'riskLevel': {
-                '1': '低等风险',
-                '2': '中低风险',
-                '3': '中等风险',
-                '4': '中高风险'
-            }
         },
         'field_name_2_new_field_name': {
             'minAmount': FIELD_MAPPINGS['起购金额'],
@@ -540,14 +296,12 @@ PC_REQUESTS_ITER = [
             'tranBankSet': FIELD_MAPPINGS['销售渠道'],
             'productNo': FIELD_MAPPINGS['登记编码'],
         },
-        'check_props': ['logId', 'cpbm'],
         'title': '本行产品-银行公司理财'
     },
     # 代销产品-公司代销理财
     {
         'request': {
             'url': 'https://ebank.pingan.com.cn/rmb/bron/ibank/pop/fund/supervise/qrySuperviseProductList.do',
-            'method': 'post',
             'data': lambda page_no: {
                 'tableIndex': 'table11',
                 'dataType': '11',
@@ -557,30 +311,6 @@ PC_REQUESTS_ITER = [
                 'channelCode': 'C0002',
                 'access_source': 'PC',
             },
-            'headers': {"accept": "*/*", "accept-encoding": "gzip, deflate, br",
-                        "accept-language": "zh-CN,zh;q=0.9",
-                        "content-length": "99",
-                        "content-type": "application/x-www-form-urlencoded;charset=utf-8",
-                        "cookie": "WEBTRENDS_ID=298ff81b8809ac6d2841663310821456; NGWhitelist=100601,100602; fp_ver=4.7.9; BSFIT4_OkLJUJ=FHk977HoFNHTJYk8DeBGXdlDCJWt5Pcn; WT-FPC=id=298ff81b8809ac6d2841663310821456lv=1663310826636ss=1663310821456fs=1663310821456pn=4vn=1; BSFIT4_EXPIRATION=1663678913274; BSFIT4_DEVICEID=GfP-kTREi3De0HCgo2ur2MZ13Bex9EvaFeVCW8v7RDXIY8ZxI-THQ2ZI11BDzmkRU0HU4cPFXpK534XfD1802lNGifw2pDwx8FOFidsyWolgILVtvuKlRg59V7XPTcS_JSxn2wOiMc8SVjo56uBNdCP9rKthAYhX",
-                        "origin": "https//ebank.pingan.com.cn",
-                        "referer": "https//ebank.pingan.com.cn/aum/common/sales_list/index.html?initPage=true",
-                        "sec-ch-ua": "\"Google Chrome\";v=\"95\", \"Chromium\";v=\"95\", \";Not A Brand\";v=\"99\"",
-                        "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": "\"Windows\"",
-                        "sec-fetch-dest": "empty",
-                        "sec-fetch-mode": "cors", "sec-fetch-site": "same-origin",
-                        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36"
-                        },
-
-        },
-        'identifier': 'payh',
-        'field_value_mapping': {
-            'minAmount': lambda x: str(x) + '元' if remove_space(str(x)) else '',
-            'riskLevel': {
-                '1': '低等风险',
-                '2': '中低风险',
-                '3': '中等风险',
-                '4': '中高风险'
-            }
         },
         'field_name_2_new_field_name': {
             'minAmount': FIELD_MAPPINGS['起购金额'],
@@ -594,7 +324,6 @@ PC_REQUESTS_ITER = [
             'tranBankSet': FIELD_MAPPINGS['销售渠道'],
             'productNo': FIELD_MAPPINGS['登记编码']
         },
-        'check_props': ['logId', 'cpbm'],
         'title': '代销产品-公司代销理财'
     },
 ]

@@ -12,7 +12,7 @@ from 广发银行_完成.gfyh_assist import pc_requests_iter
 
 class GfyhPCCrawlRequest(ConfigurableCrawlRequest):
     def __init__(self):
-        super(GfyhPCCrawlRequest, self).__init__()
+        super(GfyhPCCrawlRequest, self).__init__(name='广发银行PC端')
         self.requests_iter = pc_requests_iter
         self.page_no = None
         self.total_page = None
