@@ -25,6 +25,7 @@ oracle_uri = '10.2.15.16:1521/testdb'
 oracle_str_type = 'varchar2(1000)'
 oracle_number_type = 'number(11)'
 
+
 # oracle_user = 'User123'
 # oracle_password = '123456'
 # oracle_uri = '127.0.0.1:1521/orcl'

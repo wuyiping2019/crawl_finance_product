@@ -1,12 +1,10 @@
+import abc
 import argparse
 import configparser
 import logging
 import os
-import sys
 import typing
-
 from dbutils.pooled_db import PooledDB
-
 from crawl_utils.db_utils import get_db_poll
 from crawl_utils.global_config import DBType
 
@@ -14,10 +12,15 @@ from crawl_utils.global_config import DBType
 解析crawl.cfg配置文件
 解析结果以CrawlConfig对象的形式返回
 """
-config_parser_logger = logging.getLogger(__name__)
+# 创建日志对象
+logger = logging.getLogger(__name__)
+# 创建日志的输出格式对象
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(threadName)s %(filename)s %(funcName)s %(message)s')
+# 创建控制台日志输出handler
 console_handler = logging.StreamHandler()
-config_parser_logger.addHandler(console_handler)
-config_parser_logger.setLevel("DEBUG")
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
+logger.setLevel("DEBUG")
 
 
 def cast_data(value, value_type):
@@ -56,6 +59,7 @@ def parse_crawl_cfg() -> dict:
                 value = cast_data(value, value_type)
             section_dict[f"{key}"] = value
         config_dict[section_name] = section_dict
+    logger.info("解析crawl.cfg:%s" % config_dict)
     return config_dict
 
 
@@ -66,6 +70,7 @@ def parse_command_args(config: dict) -> None:
     logger_level = args.level
     if logger_level:
         config['logger'].update({'level': logger_level})
+    logger.info(f"解析命令行--level:%s" % logger_level)
 
 
 def init_db_poll(config: dict, db_type: str) -> typing.Optional[PooledDB]:
@@ -82,6 +87,7 @@ def init_db_poll(config: dict, db_type: str) -> typing.Optional[PooledDB]:
     elif db_type == 'mysql':
         db_type = DBType.mysql
         pool = get_db_poll(db_type, **config['pool.mysql'])
+    logger.info(f"完成数据库连接池初始化")
     return pool
 
 
@@ -114,23 +120,23 @@ class CrawlConfig:
 # 1.解析crawl.cfg配置文件
 try:
     cfg = parse_crawl_cfg()
-    config_parser_logger.info("成功解析crawl.cfg文件")
+    logger.info("成功解析crawl.cfg文件")
 except Exception as e:
-    config_parser_logger.exception("解析crawl.cfg配置文件失败")
+    logger.exception("解析crawl.cfg配置文件失败")
     raise e
 # 2.解析命令行参数
 try:
     parse_command_args(cfg)
-    config_parser_logger.info("成功解析命令行参数")
+    logger.info("成功解析命令行参数")
 except Exception as e:
-    config_parser_logger.exception("解析命令行参数失败")
+    logger.exception("解析命令行参数失败")
     raise e
 # 3.初始化必要的对象
 try:
     init_obj(cfg)
-    config_parser_logger.info("成功初始化对象")
+    logger.info("成功初始化对象")
 except Exception as e:
-    config_parser_logger.exception("初始化对象失败")
+    logger.exception("初始化对象失败")
     raise e
 
 crawl_config = CrawlConfig(config=cfg)
@@ -141,4 +147,8 @@ if __name__ == '__main__':
     """
     测试
     """
-    print(crawl_config)
+    print("打印查看:", crawl_config)
+
+
+
+

@@ -1,8 +1,6 @@
 import datetime
 import json
-import sys
 from logging import Logger
-from typing import List, Any
 import pymysql
 from dbutils.pooled_db import PooledDB
 import cx_Oracle

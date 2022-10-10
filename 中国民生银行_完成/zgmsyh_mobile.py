@@ -22,6 +22,7 @@ logger = get_logger(name=__name__, log_level=crawl_config.log_level, log_modules
 class ZgmsyhMobileCrawlRequest(CustomCrawlRequest):
     def __init__(self):
         super(ZgmsyhMobileCrawlRequest, self).__init__(
+            name='中国光大银行',
             session=requests.session(),
             config=crawl_config,
             check_props=['logId', 'cpbm','mark'],

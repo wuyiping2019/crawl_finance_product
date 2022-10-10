@@ -15,8 +15,9 @@ from 平安银行_完成.payh_config import PC_REQUESTS_ITER, FIELD_VALUE_MAPPIN
 
 
 class PayhPCCrawlRequest(ConfigurableCrawlRequest):
+
     def __init__(self):
-        super().__init__()
+        super().__init__(name='平安银行PC端')
         self.request_iter_index = None
         self.page_no = None
         self.total_page = None
@@ -60,9 +61,6 @@ class PayhPCCrawlRequest(ConfigurableCrawlRequest):
                     self.total_page = 1
                 else:
                     self.total_page = None
-
-    def _row_processor(self, row: dict) -> dict:
-        return row
 
     def _row_post_processor(self, row: dict):
         row['logId'] = self.log_id

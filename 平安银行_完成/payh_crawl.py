@@ -21,7 +21,7 @@ class SpiderFlowImpl(SpiderFlow):
         except Exception as e:
             errors.append(e)
             logger.error("处理平安银行PC端数据失败")
-            logger.error(f"{e}")
+            raise e
         finally:
             crawl_pc.close()
         if errors:

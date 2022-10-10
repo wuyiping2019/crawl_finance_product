@@ -15,6 +15,7 @@ from 广发银行_完成.gfyh_config import MASK
 class GfyhMobileCrawlRequest(CustomCrawlRequest):
     def __init__(self):
         super(GfyhMobileCrawlRequest, self).__init__(
+            name='广发银行',
             session=requests.session(),
             config=crawl_config,
             check_props=['logId', 'cpbm', 'mark'],

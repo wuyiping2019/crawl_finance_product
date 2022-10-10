@@ -6,7 +6,7 @@ MASK = 'payh'
 SLEEP_SECOND = 3
 STATE = 'DEV'
 FIELD_VALUE_MAPPING = {
-    'minAmount': lambda x: str(x) + '元' if str(x) else '',
+    'minAmount': lambda row, key: str(row.get(key, None)) + '元' if str(row.get(key, None)) else '',
     'rateType': {
         'BF': '保本浮动收益',
         'FF': '非保本浮动收益'

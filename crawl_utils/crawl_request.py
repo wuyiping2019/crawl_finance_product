@@ -8,6 +8,7 @@ from typing import List, Dict
 import requests
 from requests import Response, Session
 
+from crawl_utils.common_utils import delete_empty_value
 from crawl_utils.custom_exception import cast_exception, CustomException
 from crawl_utils.db_utils import check_table_exists, create_table, update_else_insert_to_db, add_fields
 from crawl_utils.global_config import get_table_name, get_sequence_name, get_trigger_name
@@ -29,66 +30,9 @@ class CrawlRequestException(Exception):
 
 
 class AbstractCrawlRequest:
-
-    @abstractmethod
-    def _pre_crawl(self, **kwargs):
-        """
-        爬虫之前的准备工作 仅调用一次
-        :return:
-        """
-        pass
-
-    @abstractmethod
-    def _config_params(self, **kwargs):
-        """
-        每次执行请求之前都会调用一次
-        :return:
-        """
-        pass
-
-    @abstractmethod
-    def _do_request(self, **kwargs):
-        """
-        执行请求
-        :return:
-        """
-        pass
-
-    @abstractmethod
-    def _parse_response(self, **kwargs):
-        """
-        解析响应结果
-        :return:
-        """
-        pass
-
-    @abstractmethod
-    def _config_end_flag(self, **kwargs):
-        """
-        配置end_flag标识
-        :return:
-        """
-        pass
-
-    @abstractmethod
-    def do_save(self, **kwargs):
-        """
-        执行保存工作
-        :return:
-        """
-        pass
-
-    @abstractmethod
-    def close(self, **kwargs):
-        """
-        释放资源
-        :return:
-        """
-        pass
-
-    @abstractmethod
-    def _process_rows(self, **kwargs):
-        pass
+    """
+    定义爬取数据工作流的抽象类:类似java中的接口 仅提供一个do_crawl方法 全部的爬取数据流逻辑都必须在do_crawl方法中实现
+    """
 
     @abstractmethod
     def do_crawl(self, **kwargs):
@@ -146,46 +90,49 @@ class RowKVTransformAndFilter(RowFilter):
                :param row: 需要处理的字典对象
                :return:
                """
+        # 当过滤器为空时 直接返回
         if not self.filters:
             return row
-        if isinstance(self.filters, list):
+        # 当过滤器是列表时 表示过滤字典
+        elif isinstance(self.filters, list):
             return {k: row.get(k, None) for k in self.filters}
-        if isinstance(self.filters, dict):
+        # 当过滤器是字典时
+        elif isinstance(self.filters, dict):
             new_row = {}
             # 遍历所有的key值
             for key in set(row.keys()) | set(self.filters.keys()):
-                if key in row.keys() and key not in self.filters.keys():
-                    new_row[key] = row[key]
-                elif key in self.filters.keys():
-                    filter_value = self.filters[key]
-                    # 针对filter_value不同的情况进行处理
-                    if hasattr(filter_value, '__call__'):
-                        value = filter_value(row, key)
-                        # 返回True
-                        if isinstance(value, bool) and value:
-                            new_row[key] = row[key]
-                        elif isinstance(value, bool) and not value:
-                            pass
-                        elif isinstance(value, tuple) and len(value) == 2:
-                            new_row[value[0]] = value[1]
-                        else:
-                            raise CrawlRequestException(None, f"ERROR:{getLocalDate()}:无法进行转换")
+                filter_value = self.filters.get(key, None)
+                if filter_value is None:
+                    new_row[key] = row.get(key, None)
+                elif hasattr(filter_value, '__call__'):
+                    value = filter_value(row, key)
+                    if isinstance(value, tuple) and len(value) == 2:
+                        new_row[value[0]] = new_row[value[1]]
                     else:
-                        new_row[filter_value] = row.get(key, None)
-                elif key not in row.keys() and key not in self.filters.keys():
-                    pass
+                        new_row[key] = value
+                elif isinstance(filter_value, dict):
+                    # 表示对row中key的value进行转码
+                    new_row[key] = filter_value.get(row.get(key, None), row.get(key, None))
+                else:
+                    # 直接将赋值
+                    new_row[filter_value] = row.get(key, None)
             return new_row
 
 
 class CustomCrawlRequest(AbstractCrawlRequest):
+    """
+    定义一个常常使用requests.session对象进行数据爬取的抽象类 继承AbstractCrawlRequest类
+    """
 
     def __init__(self,
+                 name: str,
                  session: Session,
                  config: CrawlConfig,
                  check_props: List[str],
-                 mask: str = None,
-                 **kwargs):
+                 mask: str = None
+                 ):
         super().__init__()
+        self.name = name
         self.request: SessionRequest = SessionRequest()
         self.request.headers = {
             "Accept": "application/json, text/plain, */*",
@@ -199,34 +146,87 @@ class CustomCrawlRequest(AbstractCrawlRequest):
             "Sec-Fetch-Mode": "cors",
             "Sec-Fetch-Site": "same-origin",
         }
-        self.session = session
+        # requests.session()返回的Session对象
+        self._session = session
+        # 一个配置对象,该对象含有各种配置项,如日志级别、数据库连接池等,该对象中的需要释放资源的对象由创建者关闭
+        self.crawl_config: CrawlConfig = config
+        # 存储爬取过程中最后处理之后返回的数据
         self.processed_rows = []
+        # 过滤器链：_parse_response返回的数据经过该过滤器链处理之后会添加到processed_rows列表中
         self.filters: List[RowFilter] = []
         self.check_props = check_props
+        self.mask = mask
         self.end_flag = False
+        # 默认在保存数据时优先使用save_table属性 当该属性为空时 使用get_table_name(mask)方法返回的表名保存数据
         self.save_table = None
+        # 默认如果保存数据使用的是oracle数据库并且不存在表时 会使用序列和触发器创建一个含有自增id主键的表 有限使用sequence_name和trigger_name为触发器名称和触发器名称
+        # 如果需要创建序列和触发器且sequence_name和trigger_name为空时,会使用get_sequence_name(mask)方法和get_trigger_name(mask)方法获取序列和触发器名称
         self.sequence_name = None
         self.trigger_name = None
-        self.mask = mask
-        self.kwargs = kwargs
-        self.crawl_config: CrawlConfig = config
-        self.init_props(**kwargs)
 
-    def init_props(self, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
+    @property
+    def session(self) -> Session:
+        """
+        对外的session属性:避免直接使用_session属性
+        :return:
+        """
+        return self._session
 
-    def add_filter(self, row_kv_filter: RowFilter):
-        if issubclass(row_kv_filter.__class__, RowKVTransformAndFilter):
-            self.filters.append(row_kv_filter)
+    @session.setter
+    def session(self, session):
+        """
+        设置session属性:实际上设置的是_session属性,避免在_session非空的情况下,对_session重新赋新的Session对象没有释放资源
+        :param session:
+        :return:
+        """
+        if self._session and hasattr(self._session, '__call__'):
+            self._session.close()
+        self._session = session
+
+    def add_filter(self, filter: RowFilter):
+        """
+        向空过滤器链中添加过滤器
+        :param filter:
+        :return:
+        """
+        if isinstance(filter, RowFilter):
+            self.filters.append(filter)
         else:
-            raise CrawlRequestException(None, f"EEEOR:{getLocalDate()}:add_filter需要添加RowFilter类实现类的Filter")
+            logger.error(f"向CustomCrawlRequest过滤器链中添加的过滤器必须为RowFilter类及其子类对象")
+            raise CrawlRequestException(None, f"无法添加非RowFilter类型的过滤器")
 
-    def do_crawl(self):
+    def do_crawl(self, **kwargs):
+        try:
+            self._do_crawl()
+        except Exception as e:
+            logger.error("爬取%s的数据过程中抛出异常" % self.name)
+            logger.error(f"{e}")
+            raise e
+        finally:
+            # 释放资源
+            self.close()
+            logger.info("成功%s的释放资源" % self.name)
+
+    def _do_crawl(self):
+        """
+        为了避免大块的try except块 close方法放在do_crawl方法中
+        核心功能类：完成爬虫工作流
+        1.爬虫之前的准备工作 调用_pre_crawl方法
+        2.开始循环:判断end_flag标识
+        3.配置参数 调用_config_params方法
+        4.执行请求 调用_do_request方法
+        5.解析响应 调用_parse_response方法
+        6.处理数据 调用_filter_rows方法
+        7.终止标识 判断end_flag
+        8.end_flag为True继续循环 返回第3步 否则终止循环
+        9.保存数据 调用do_save方法
+        10.释放资源 调用close方法
+        :return:
+        """
         # 1.该方法仅能调用一次
         if getattr(self, 'do_crawl_exe_flag', None):
             # 如果为True则表示已经调用过
-            raise CrawlRequestException(None, f"ERROR:{getLocalDate()}:do_crawl方法已经调用过,无法重复调用")
+            raise CrawlRequestException(None, f"无法重复调用CustomCrawlRequest.do_crawl方法")
         # 2.执行爬虫数据需要进行的准备工作
         self._pre_crawl()
         logger.info("完成CustomCrawlRequest._pre_crawl准备工作")
@@ -236,13 +236,15 @@ class CustomCrawlRequest(AbstractCrawlRequest):
             self._config_params()
             logger.info("完成请求参数的配置:%s" % self.request)
             response = self._do_request()
-            logger.info("完成请求,请求状态码:%s" % response.status_code)
+            if response.status_code == 200:
+                logger.info("成功获取响应结果,响应状态码:%s" % response.status_code)
+            else:
+                logger.warn("无法获取响应,响应状态码:%s" % response.status_code)
+                continue
             rows = self._parse_response(response)
             logger.info("完成响应解析,获取%s条数据" % len(rows))
             rows = self._filter_rows(rows)
             logger.info("完成数据过滤操作")
-            rows = self._process_rows(rows)
-            logger.info("完成数据处理操作")
             if rows:
                 self.processed_rows += rows
             self._config_end_flag()
@@ -251,29 +253,34 @@ class CustomCrawlRequest(AbstractCrawlRequest):
         # 标识该方法已经被调用过
         setattr(self, 'do_crawl_exe_flag', True)
         # 保存数据
-        logger.info("开始保存数据")
+        logger.info("开始%s的保存数据" % self.name)
         self.do_save()
-        logger.info("成功保存数据")
-        # 释放资源
-        self.close()
-        logger.info("成功释放资源")
+        logger.info("成功%s的保存数据" % self.name)
 
-    def _filter_rows(self, rows) -> List[dict]:
+    def _filter_rows(self, rows: List[dict]) -> List[dict]:
+        """
+        逐条数据经过过滤器链进行处理
+        :param rows:
+        :return:
+        """
         count = 1
+        new_rows = []
         for fil in self.filters:
+            if count == 5:
+                print(count)
             new_rows = []
+            if not fil:
+                logger.debug(f"filter-{count}-{self.name}为空")
+                count += 1
+                continue
             for row in rows:
-                logger.info(f"filter-{count}处理{row}")
+                logger.debug(f"filter-{count}-{self.name}处理:{row}")
                 new_row = fil.filter(row)
-                logger.info(f"filter-{count}处理结果{new_row}")
+                logger.debug(f"filter-{count}-{self.name}处理结果:{new_row}")
                 new_rows.append(new_row)
             count += 1
             rows = new_rows
         return new_rows
-
-    @abstractmethod
-    def _process_rows(self, rows: List[dict]) -> List[dict]:
-        pass
 
     @abstractmethod
     def _pre_crawl(self):
@@ -284,6 +291,10 @@ class CustomCrawlRequest(AbstractCrawlRequest):
         pass
 
     def _do_request(self) -> Response:
+        """
+        使用requests.session().request()方法获取响应结果
+        :return:
+        """
         if isinstance(self.request, SessionRequest):
             response: Response = self.session.request(
                 url=self.request.url,
@@ -294,7 +305,8 @@ class CustomCrawlRequest(AbstractCrawlRequest):
         elif isinstance(self.request, dict):
             response: Response = self.session.request(
                 **self.request)
-        logger.info("请求响应码:%s" % response.status_code)
+        else:
+            raise CrawlRequestException(None, "调用_do_request失败,request必须为SessionRequest对象或一个字典对象")
         return response
 
     @abstractmethod
@@ -308,16 +320,20 @@ class CustomCrawlRequest(AbstractCrawlRequest):
     def do_save(self):
         conn = None
         cursor = None
+        table_exists_flag = False
+        if not self.processed_rows:
+            return
         try:
             conn = self.crawl_config.db_pool.connection()
             cursor = conn.cursor()
-            check_table = False
             for row in self.processed_rows:
+                logger.debug(f'正在保存{row}')
                 # 判断表是否存在
-                if not check_table:
-                    exist_flag = check_table_exists(self.save_table if self.save_table else get_table_name(self.mask),
-                                                    cursor)
-                    if not exist_flag:
+                if not table_exists_flag:
+                    table_exists_flag = check_table_exists(
+                        self.save_table if self.save_table else get_table_name(self.mask),
+                        cursor)
+                    if not table_exists_flag:
                         create_table(row,
                                      'CLOB' if self.crawl_config.db_type.name == 'oracle' else 'text',
                                      'NUMBER(11)' if self.crawl_config.db_type.name == 'oracle' else 'long',
@@ -326,15 +342,15 @@ class CustomCrawlRequest(AbstractCrawlRequest):
                                      self.sequence_name if self.sequence_name else get_sequence_name(self.mask),
                                      self.trigger_name if self.trigger_name else get_trigger_name(self.mask)
                                      )
-                        check_table = True
+                        table_exists_flag = True
                 # 执行插入操作
                 self._save_one_row(row, cursor)
-                logger.info(f"保存{row}")
+                logger.debug(f"保存{row}")
             conn.commit()
-            logger.info(f"提交保存数据事务")
+            logger.info(f"%s提交保存数据事务" % (self.name + '-'))
         except Exception as e:
             if conn:
-                logger.error(f"回滚保存数据事务")
+                logger.error(f"%s回滚保存数据事务" % (self.name + '-'))
                 conn.rollback()
             raise e
         finally:
@@ -344,6 +360,9 @@ class CustomCrawlRequest(AbstractCrawlRequest):
                 conn.close()
 
     def _save_one_row(self, row, cursor):
+        delete_empty_value(row)
+        if not row:
+            return
         # 插入数据
         try:
             update_else_insert_to_db(
@@ -377,16 +396,18 @@ class CustomCrawlRequest(AbstractCrawlRequest):
 
 class ConfigurableCrawlRequest(CustomCrawlRequest):
     def __init__(self,
+                 name: str,
                  log_id: int = None,
                  request: dict = None,
                  identifier: str = None,
-                 field_name_2_new_field_name=None,
+                 field_name_2_new_field_name: dict = None,
                  field_value_mapping=None,
                  mark_code_mapping_count: int = 1,
                  sleep_second=3,
                  **kwargs
                  ):
         super().__init__(
+            name=name,
             session=requests.session(),
             config=crawl_config,
             check_props=['logId', 'cpbm'],
@@ -394,21 +415,61 @@ class ConfigurableCrawlRequest(CustomCrawlRequest):
         )
         self.log_id = log_id
         self.request = request if request else {}
+        # 创建一个具有5个空过滤器的过滤器链
+        self.filters = [None, None, None, None, None]
+
         self.mark_code_mapping = None
         self.mark_code_mapping_count = mark_code_mapping_count
-        self.field_name_2_new_field_name = field_name_2_new_field_name
-        self.field_value_mapping = field_value_mapping
+
+        self._field_name_2_new_field_name = field_name_2_new_field_name
+        self.field_name_2_new_field_name = self._field_name_2_new_field_name
+
+        self._field_value_mapping = field_value_mapping
+        self.field_value_mapping = self._field_value_mapping
+
         self.end_flag = False
         self.processed_rows = []
         self.sleep_second = sleep_second
         self.kwargs = kwargs
+        # 该过滤器处于过滤器链中的第1个 处于过滤器链中的头
+        if self._row_processor.__dict__.get('__isabstractmethod__', False):
+            # 当_row_processor没有被实现的话
+            pass
+        else:
+            # 当子类实现了_row_processor时
+            row_filter = RowFilter()
+            row_filter.filter = self._row_processor
+            self.filters[0] = row_filter
+        # 该过滤器处于过滤器链中的第5个 处于过滤器链中的尾部
+        if self._row_post_processor.__dict__.get('__isabstractmethod__', False):
+            pass
+        else:
+            # 当子类实现了_row_processor时
+            row_post_filter = RowFilter()
+            row_post_filter.filter = self._row_post_processor
+            self.filters[4] = row_post_filter
 
-    def _process_rows(self, rows: List[dict]) -> List[dict]:
-        new_rows = []
-        for row in rows:
-            new_row = self._row_transform(row)
-            new_rows.append(new_row)
-        return new_rows
+    @property
+    def field_name_2_new_field_name(self):
+        return self._field_name_2_new_field_name
+
+    @field_name_2_new_field_name.setter
+    def field_name_2_new_field_name(self, value):
+        # 设置该属性会重置过滤器链中第3个和第4个过滤器
+        if value:
+            self._field_name_2_new_field_name = value
+            self.filters[2] = RowKVTransformAndFilter(value)
+            self.filters[3] = RowKVTransformAndFilter(list(value.values()))
+
+    @property
+    def field_value_mapping(self):
+        return self._field_value_mapping
+
+    @field_value_mapping.setter
+    def field_value_mapping(self, value):
+        # 设置该属性会重置过滤器链中第2个过滤器
+        if value:
+            self.filters[1] = RowKVTransformAndFilter(value)
 
     @abstractmethod
     def _pre_crawl(self):
@@ -443,78 +504,20 @@ class ConfigurableCrawlRequest(CustomCrawlRequest):
         """
         pass
 
-    def _filter_rows(self, rows) -> List[dict]:
-        return rows
-
     @abstractmethod
     def _row_processor(self, row: dict) -> dict:
+        """
+        过滤器链中的第一个过滤器
+        :param row:
+        :return:
+        """
         pass
-
-    def _row_key_mapping(self, row: dict, field_name_2_new_field_name: dict = None) -> dict:
-        """
-        对k/v对中的k转换
-        :param row:
-        :param field_name_2_new_field_name:
-        :return:
-        """
-        logger.debug(f'开始对key进行转换:{row}')
-        if field_name_2_new_field_name is None:
-            return row
-        new_row = {}
-        for k, v in row.items():
-            if k in field_name_2_new_field_name.keys():
-                new_row[field_name_2_new_field_name[k]] = v
-            elif k in FIELD_MAPPINGS.values():
-                new_row[k] = v
-            else:
-                pass
-        logger.debug(f'value转换结果:{new_row}')
-        return new_row
-
-    def _row_value_mapping(self, row: dict, field_value_mapping: Dict[str, object] = None) -> dict:
-        """
-        对k/v中的v转换
-        :param row:
-        :param field_value_mapping:
-        :return:
-        """
-        logger.debug(f'开始对value进行转换:{row}')
-        if field_value_mapping is None:
-            return row
-        new_row = {}
-        for k, v in row.items():
-            mapping_v = v
-            # 表示配置了需要进行value转换
-            if k in field_value_mapping.keys():
-                value_mapping = field_value_mapping[k]
-                if isinstance(value_mapping, types.LambdaType) or isinstance(value_mapping, types.FunctionType):
-                    # 表示需要调用函数进行转换
-                    mapping_v = value_mapping(v)
-                elif isinstance(value_mapping, dict):
-                    mapping_v = value_mapping.get(str(v), str(v))
-                    # 表示使用字典进行映射
-                    if str(v) not in value_mapping.keys():
-                        logger.debug(f"{k}:{str(v)}进行value转换,该value不存在于{value_mapping}中")
-                        # 记录没有设置的映射编码
-                        if not self.mark_code_mapping:
-                            self.mark_code_mapping = {}
-                        if k not in self.mark_code_mapping.keys():
-                            self.mark_code_mapping[k] = {}
-                        if v not in self.mark_code_mapping[k].keys():
-                            self.mark_code_mapping[k][v] = []
-                        if len(self.mark_code_mapping[k][v]) <= self.mark_code_mapping_count:
-                            self.mark_code_mapping[k][v].append(row)
-            new_row[k] = mapping_v
-        logger.debug(f'value转换结果:{new_row}')
-        return new_row
 
     @abstractmethod
     def _row_post_processor(self, row: dict):
+        """
+        过滤器链中的第五个过滤器
+        :param row:
+        :return:
+        """
         pass
-
-    def _row_transform(self, row: dict):
-        new_row = self._row_value_mapping(row, self.field_value_mapping)
-        new_row = self._row_processor(new_row)
-        new_row = self._row_key_mapping(new_row, self.field_name_2_new_field_name)
-        new_row = self._row_post_processor(new_row)
-        return new_row

@@ -17,6 +17,7 @@ from 中国民生银行_完成.zgmsyh_config import MASK
 class ZgmsyhPCCrawlRequest(CustomCrawlRequest):
     def __init__(self):
         super(ZgmsyhPCCrawlRequest, self).__init__(
+            name='中国民生银行',
             session=requests.session(),
             config=crawl_config,
             check_props=['logId', 'cpbm','mark'],
