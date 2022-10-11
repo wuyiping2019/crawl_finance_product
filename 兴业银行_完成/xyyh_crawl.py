@@ -1,7 +1,10 @@
+import traceback
+
 from requests import Session
 
 from config_parser import CrawlConfig, crawl_config
 from crawl import MutiThreadCrawl
+from crawl_utils.crawl_request import CrawlRequestException, CrawlRequestExceptionEnum
 from crawl_utils.custom_exception import cast_exception, CustomException
 from crawl_utils.db_utils import update_else_insert_to_db, check_table_exists, create_table, add_fields, close
 from crawl_utils.global_config import get_table_name
@@ -51,12 +54,18 @@ class SpiderFlowImpl(SpiderFlow):
 
 
 def do_crawl(config: CrawlConfig):
-    process_flow(
-        log_name=LOG_NAME,
-        target_table=get_table_name(mask=MASK_STR),
-        callback=SpiderFlowImpl(),
-        config=config
-    )
+    try:
+        process_flow(
+            log_name=LOG_NAME,
+            target_table=get_table_name(mask=MASK_STR),
+            callback=SpiderFlowImpl(),
+            config=config
+        )
+    except Exception as e:
+        raise CrawlRequestException(
+            CrawlRequestExceptionEnum.CRAWL_FAILED_EXCEPTION.code,
+            CrawlRequestExceptionEnum.CRAWL_FAILED_EXCEPTION.msg + ':\n' + traceback.format_exc()
+        )
 
 
 if __name__ == '__main__':

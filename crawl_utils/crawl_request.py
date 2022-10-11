@@ -45,6 +45,8 @@ class CrawlRequestExceptionEnum(Enum):
 
     TABLE_NULL_EXCEPTION = 1, '无法获取需要将数据保存的表:mask和save_table不能同时为空'
     CHECK_PROPS_NULL_EXCEPTION = 2, '执行更新否则插入操作,需要指定判断一条数据在表中唯一标识的字段列表'
+    RECALLING_DO_CRAWL_EXCEPTION = 3, '重复调用do_crawl方法异常'
+    CRAWL_FAILED_EXCEPTION = 4, '爬取银行理财产品失败'
 
 
 class AbstractCrawlRequest:
@@ -125,7 +127,7 @@ class RowKVTransformAndFilter(RowFilter):
                 elif hasattr(filter_value, '__call__'):
                     value = filter_value(row, key)
                     if isinstance(value, tuple) and len(value) == 2:
-                        new_row[value[0]] = new_row[value[1]]
+                        new_row[value[0]] = value[1]
                     else:
                         new_row[key] = value
                 elif isinstance(filter_value, dict):
@@ -244,7 +246,10 @@ class CustomCrawlRequest(AbstractCrawlRequest):
         # 1.该方法仅能调用一次
         if getattr(self, 'do_crawl_exe_flag', None):
             # 如果为True则表示已经调用过
-            raise CrawlRequestException(None, f"无法重复调用CustomCrawlRequest.do_crawl方法")
+            raise CrawlRequestException(
+                CrawlRequestExceptionEnum.RECALLING_DO_CRAWL_EXCEPTION.code,
+                CrawlRequestExceptionEnum.RECALLING_DO_CRAWL_EXCEPTION.msg
+            )
         # 2.执行爬虫数据需要进行的准备工作
         self._pre_crawl()
         logger.info("完成CustomCrawlRequest._pre_crawl准备工作")

@@ -12,7 +12,7 @@ from 华夏银行_完成.hxyh_config import MOBILE_REQUEST_INFO
 
 class HxyhMobileCrawlRequest(ConfigurableCrawlRequest):
     def __init__(self):
-        super().__init__()
+        super().__init__(name='华夏银行移动端')
         self.page_no = None
         self.total_page = None
         self.request = {}

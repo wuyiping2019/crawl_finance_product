@@ -1,8 +1,10 @@
+import traceback
+
 from requests import Session
 
 from config_parser import CrawlConfig, crawl_config
 from crawl import MutiThreadCrawl
-from crawl_utils.crawl_request import CrawlRequestException
+from crawl_utils.crawl_request import CrawlRequestException, CrawlRequestExceptionEnum
 from crawl_utils.global_config import get_table_name
 from crawl_utils.logging_utils import get_logger
 from crawl_utils.spider_flow import SpiderFlow, process_flow
@@ -22,22 +24,23 @@ class SpiderFlowImpl(SpiderFlow):
         error = []
         try:
             crawl_mobile.do_crawl()
-            logger.info("")
+            logger.info("成功爬取广发银行移动端的数据并保存")
         except Exception as e:
             logger.error("爬取广发银行移动端端数据失败")
-            logger.error(f"{e}")
-            error.append(e)
+            error.append(traceback.format_exc())
         try:
             crawl_pc.do_crawl()
+            logger.info("成功爬取广发银行PC端的数据并保存")
         except Exception as e:
             logger.error("爬取广发银行PC端数据失败")
-            logger.error(f"{e}")
-            error.append(e)
+            error.append(traceback.format_exc())
         if error:
-            print(error)
-            logger.error(f"爬取中国民生银行捕获到的异常数量:%s" % len(error))
-            error_msg = "\n".join([str(e.__traceback__) for e in error])
-            raise CrawlRequestException(None, f"爬取中国民生银行异常{error_msg}")
+            logger.error(f"爬取《广发银行》捕获到的异常数量:%s" % len(error))
+            error_msg = "\n".join([e for e in error])
+            raise CrawlRequestException(
+                CrawlRequestExceptionEnum.CRAWL_FAILED_EXCEPTION.code,
+                CrawlRequestExceptionEnum.CRAWL_FAILED_EXCEPTION.msg + ':\n' + error_msg
+            )
 
 
 def do_crawl(config: CrawlConfig):

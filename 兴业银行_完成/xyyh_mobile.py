@@ -1,15 +1,9 @@
 import json
 import time
-
-from bs4 import BeautifulSoup, Tag
-from bs4.element import ResultSet
 from selenium.webdriver import ActionChains
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.chromium import webdriver
-from selenium.webdriver.common.actions.action_builder import ActionBuilder
-from selenium.webdriver.common.actions.mouse_button import MouseButton
 from selenium.webdriver.common.by import By
-from selenium.webdriver.remote.webelement import WebElement
 
 from crawl_utils.common_utils import delete_empty_value
 from crawl_utils.mappings import FIELD_MAPPINGS

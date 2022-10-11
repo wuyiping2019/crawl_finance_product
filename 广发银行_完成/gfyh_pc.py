@@ -7,35 +7,37 @@ from requests import Response
 from crawl_utils.crawl_request import ConfigurableCrawlRequest
 from crawl_utils.db_utils import getLocalDate
 from crawl_utils.html_utils import parse_table
-from 广发银行_完成.gfyh_assist import pc_requests_iter
+from 广发银行_完成.gfyh_config import PC_REQUEST_ITER, PC_METHOD
 
 
 class GfyhPCCrawlRequest(ConfigurableCrawlRequest):
     def __init__(self):
         super(GfyhPCCrawlRequest, self).__init__(name='广发银行PC端')
-        self.requests_iter = pc_requests_iter
+        self.requests_iter = None
         self.page_no = None
         self.total_page = None
-        self.current_request_index = 0
-        self.total_request_cycle = len(self.requests_iter)
+        self.current_request_index = None
+        self.total_request_cycle = None
+
+    def config_filter(self):
+        self.field_name_2_new_field_name = self.requests_iter[self.current_request_index]['field_name_2_new_field_name']
+        self.field_value_mapping = self.requests_iter[self.current_request_index].get('field_value_mapping', None)
 
     def _pre_crawl(self):
-        pass
+        self.check_props = ['logId', 'cpbm', 'bank']
+        self.mask = 'gfyh'
+        self.requests_iter = PC_REQUEST_ITER
+        self.current_request_index = 0
+        self.total_request_cycle = len(self.requests_iter)
+        self.config_filter()
 
     def _config_params(self):
         if self.page_no is None:
             self.page_no = 0
         else:
             self.page_no += 1
-        for k, v in self.requests_iter[self.current_request_index]['request'].items():
-            if isinstance(v, types.LambdaType):
-                pass
-            else:
-                self.request[k] = v
-        self.field_name_2_new_field_name = self.requests_iter[self.current_request_index]['field_name_2_new_field_name']
-        self.field_value_mapping = self.requests_iter[self.current_request_index]['field_value_mapping']
-        self.check_props = self.requests_iter[self.current_request_index]['check_props']
-        self.mask = self.requests_iter[self.current_request_index]['mask']
+        self.request['url'] = self.requests_iter[self.current_request_index]['request']['url']
+        self.request['method'] = PC_METHOD
         self.request['json'] = self.requests_iter[self.current_request_index]['request']['json'](self.page_no)
 
     def _parse_response(self, response: Response) -> List[dict]:
@@ -68,6 +70,7 @@ class GfyhPCCrawlRequest(ConfigurableCrawlRequest):
                     self.end_flag = True
                 else:
                     self.current_request_index += 1
+                    self.config_filter()
 
     def _row_processor(self, row: dict) -> dict:
         return row
@@ -79,4 +82,5 @@ class GfyhPCCrawlRequest(ConfigurableCrawlRequest):
             row['cpbm'] = row['cpmc']
         row['ywfl'] = self.requests_iter[self.current_request_index]['title']
         row['mark'] = 'PC'
+        row['bank'] = '广发银行'
         return row

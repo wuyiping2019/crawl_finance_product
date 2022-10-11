@@ -97,6 +97,7 @@ if __name__ == '__main__':
     cursor = None
     generated_log_id = None
     session = None
+    count = 0
     try:
         conn = get_conn_oracle()
         cursor = conn.cursor()
@@ -118,6 +119,6 @@ if __name__ == '__main__':
             cursor.connection.rollback()
         # 记录失败日志
         if generated_log_id:
-            mark_failure_log(e, getLocalDate(), generated_log_id, cursor)
+            mark_failure_log(e, getLocalDate(), generated_log_id, cursor, count)
     finally:
         close([cursor, conn, session])

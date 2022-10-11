@@ -2,10 +2,10 @@ import pymysql
 from pymysql.converters import escape_string
 
 from config_parser import CrawlConfig, crawl_config
+from crawl_utils.db_utils import close
 from crawl_utils.selenium_utils import get_driver, open_chrome
 import json
 from crawl_utils.global_config import DB_ENV, init_oracle, get_table_name
-from crawl_utils.db_utils import get_conn_oracle, close
 from crawl_utils.mark_log import mark_start_log, mark_success_log, mark_failure_log, getLocalDate, get_write_count, \
     get_generated_log_id, insertLogToDB
 
@@ -22,14 +22,15 @@ def do_crawl(config: CrawlConfig):
     cursor = None
     driver = None
     generated_log_id = None
+    count = 0
     # 记录开始日志
     try:
-        conn = get_conn_oracle()
+        conn = config.db_pool.connection()
         cursor = conn.cursor()
         # 记录开始日志
-        mark_start_log(NAME, getLocalDate(), cursor)
+        mark_start_log(NAME, getLocalDate(), config.db_pool)
         # 获取日志id
-        generated_log_id = get_generated_log_id(NAME, cursor)
+        generated_log_id = get_generated_log_id(NAME, config.db_pool)
         driver = get_driver()
         open_chrome(driver, URL)
         with open('crawler.js', encoding='utf-8') as f:
@@ -58,7 +59,7 @@ def do_crawl(config: CrawlConfig):
             cursor.connection.rollback()
         # 写入失败日志
         if generated_log_id:
-            mark_failure_log(e, getLocalDate(), generated_log_id, cursor)
+            mark_failure_log(e, getLocalDate(), generated_log_id, config.db_pool, count)
     finally:
         close([driver, cursor, conn])
         if driver:

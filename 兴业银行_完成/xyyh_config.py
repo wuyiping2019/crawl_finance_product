@@ -1,6 +1,6 @@
 from crawl_utils.global_config import get_sequence_name, get_trigger_name, get_table_name
 
-LOG_NAME = '兴业银行2'
+LOG_NAME = '兴业银行'
 MASK_STR = 'xyyh'
 SEQUENCE_NAME = get_sequence_name(MASK_STR)
 TRIGGER_NAME = get_trigger_name(MASK_STR)

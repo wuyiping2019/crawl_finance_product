@@ -17,7 +17,7 @@ from 华夏银行_完成.hxyh_config import PC_REQUEST_INFO, SLEEP_SECOND
 
 class HxyhPCCrawlRequest(ConfigurableCrawlRequest):
     def __init__(self):
-        super().__init__()
+        super().__init__(name='华夏银行PC端')
         self.page_no = None
         self.total_page = None
         self.request = {}
