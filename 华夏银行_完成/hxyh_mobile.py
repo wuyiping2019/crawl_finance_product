@@ -44,7 +44,6 @@ class HxyhMobileCrawlRequest(ConfigurableCrawlRequest):
             self.page_no += 1
         self.set_request_json()
 
-
     def _parse_response(self, response: Response) -> List[dict]:
         resp_str = response.text.encode(response.encoding).decode('utf-8') if response.encoding else response.text
         loads = json.loads(resp_str)
@@ -77,6 +76,7 @@ class HxyhMobileCrawlRequest(ConfigurableCrawlRequest):
         row['logId'] = self.log_id
         row['createTime'] = getLocalDate()
         row['mark'] = 'MOBILE'
+        row['bank'] = '华夏银行'
         return row
 
 
