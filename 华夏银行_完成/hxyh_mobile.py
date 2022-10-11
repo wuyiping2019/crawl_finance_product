@@ -34,6 +34,8 @@ class HxyhMobileCrawlRequest(ConfigurableCrawlRequest):
         self.field_name_2_new_field_name = MOBILE_REQUEST_INFO['field_name_2_new_field_name']
         self.check_props = MOBILE_REQUEST_INFO['check_props']
         self.request = MOBILE_REQUEST_INFO['request']
+        if self.crawl_config.state == 'DEV':
+            self.total_page = 1
 
     def _config_params(self):
         if self.page_no is None:
@@ -41,8 +43,7 @@ class HxyhMobileCrawlRequest(ConfigurableCrawlRequest):
         else:
             self.page_no += 1
         self.set_request_json()
-        if self.crawl_config.state == 'DEV':
-            self.total_page = 1
+
 
     def _parse_response(self, response: Response) -> List[dict]:
         resp_str = response.text.encode(response.encoding).decode('utf-8') if response.encoding else response.text
