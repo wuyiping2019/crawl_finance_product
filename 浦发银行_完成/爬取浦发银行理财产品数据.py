@@ -7,7 +7,7 @@ from crawl_utils.global_config import DB_ENV
 import requests
 
 URL = r'https://per.spdb.com.cn/was5/web/search'
-NAME = '浦发银行'
+NAME = '浦发银行_完成'
 TARGET_TABLE = 'ip_bank_spdb_personal'
 if DB_ENV == 'ORACLE':
     init_oracle()

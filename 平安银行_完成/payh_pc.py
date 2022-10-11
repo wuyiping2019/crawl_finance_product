@@ -85,4 +85,5 @@ class PayhPCCrawlRequest(ConfigurableCrawlRequest):
 
 if __name__ == '__main__':
     crawl_pc = PayhPCCrawlRequest()
+    crawl_pc.log_id = 1
     crawl_pc.do_crawl()

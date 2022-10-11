@@ -9,7 +9,7 @@ from crawl_utils.global_config import DB_ENV, init_oracle, get_table_name
 from crawl_utils.mark_log import mark_start_log, mark_success_log, mark_failure_log, getLocalDate, get_write_count, \
     get_generated_log_id, insertLogToDB
 
-NAME = '招商银行'
+NAME = '招商银行_完成'
 MASK = 'zsyh'
 TABLE_NAME = get_table_name(MASK)
 URL = r'http://www.cmbchina.com/cfweb/Personal/'

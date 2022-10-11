@@ -183,6 +183,7 @@ class CustomCrawlRequest(AbstractCrawlRequest):
         # 如果需要创建序列和触发器且sequence_name和trigger_name为空时,会使用get_sequence_name(mask)方法和get_trigger_name(mask)方法获取序列和触发器名称
         self.sequence_name = None
         self.trigger_name = None
+        self.candidate_check_props = {}
 
     @property
     def session(self) -> Session:
@@ -268,6 +269,7 @@ class CustomCrawlRequest(AbstractCrawlRequest):
                 if self.request.get('params', ''):
                     logger.info("params:%s" % self.request.get('params', ''))
             response = self._do_request()
+            time.sleep(1)
             if response.status_code == 200:
                 logger.info("成功获取响应结果,响应状态码:%s" % response.status_code)
             else:
@@ -409,7 +411,8 @@ class CustomCrawlRequest(AbstractCrawlRequest):
                 cursor=cursor,
                 target_table=self.save_table if self.save_table else get_table_name(self.mask),
                 props_dict=row,
-                check_props={k: row[k] for k in self.check_props},
+                check_props={k: row[k] if k in row.keys() else row[self.candidate_check_props[k]] for k in
+                             self.check_props},
                 db_type=self.crawl_config.db_type
             )
         except Exception as e:
@@ -426,6 +429,8 @@ class CustomCrawlRequest(AbstractCrawlRequest):
                         row,
                         cursor
                     )
+                else:
+                    raise exception
             else:
                 raise exception
 
