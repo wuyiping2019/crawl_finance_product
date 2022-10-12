@@ -6,6 +6,7 @@ FIELD_MAPPINGS = {
     '产品简称': 'cpjc',
     '币种': 'bz',
     '起购金额': 'qgje',
+    '递增金额': 'dzje',
     '风险等级': 'fxdj',
     '募集起始日期': 'mjqsrq',
     '募集结束日期': 'mjjsrq',
@@ -28,6 +29,7 @@ FIELD_MAPPINGS = {
     '销售渠道': 'xsqd',
     '产品状态': 'cpzt',
     '委托人': 'wtr',
+    '委托人编码': 'wtrbm',
     '历史净值': 'lsjz',
     '投资期限': 'tzqx',
     '登记编码': 'djbh',
@@ -38,6 +40,7 @@ FIELD_MAPPINGS = {
     '产品说明书': 'cpsms',  # format {'title':'','url':''}
     '收益类型': 'sylx',
     '成立日': 'clr',
+    '开放日': 'kfr',
     '销售区域': 'xsqy',
     'TA编码': 'tabm',
     'TA名称': 'tamc',
@@ -45,7 +48,8 @@ FIELD_MAPPINGS = {
     '购买规则': 'gmgz',
     '赎回规则': 'shgz',
     '收益规则': 'sygz',
-    '业务分类': 'ywfl'  # 根据爬取页面的分类标准进行的分类
+    '业务分类': 'ywfl',  # 根据爬取页面的分类标准进行的分类
+    '分红方式': 'fhfs'
 }
 
 

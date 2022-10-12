@@ -1,3 +1,5 @@
+from typing import List
+
 from bs4 import BeautifulSoup, Tag
 
 from crawl_utils.string_utils import remove_space
@@ -17,7 +19,7 @@ def check_attr(tag: Tag, attr: str):
     return flag
 
 
-def parse_table(table: Tag, col_names: list, callbacks: dict, extra_attrs: dict, head_tag: str = 'th'):
+def parse_table(table: Tag, col_names: list, callbacks: dict, extra_attrs: dict, head_tag: str = 'th') -> List[dict]:
     """
 
     :param table:
@@ -76,11 +78,12 @@ def parse_table(table: Tag, col_names: list, callbacks: dict, extra_attrs: dict,
         if 'pass' in row_dict.keys():
             del row_dict['pass']
         # 转换value
-        for key in callbacks.keys():
-            if key in row_dict.keys():
-                callback = callbacks[key]
-                processed_value = str(callback(str(row_dict[key])))
-                row_dict[key] = processed_value
+        if callbacks:
+            for key in callbacks.keys():
+                if key in row_dict.keys():
+                    callback = callbacks[key]
+                    processed_value = str(callback(str(row_dict[key])))
+                    row_dict[key] = processed_value
         if extra_attrs:
             row_dict.update(extra_attrs)
         rows.append(row_dict)

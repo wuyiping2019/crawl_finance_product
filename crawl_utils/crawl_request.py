@@ -154,7 +154,7 @@ class CustomCrawlRequest(AbstractCrawlRequest):
         super().__init__()
         self.name = name
         self.request: SessionRequest = SessionRequest()
-        self.request.headers = {
+        self.default_request_headers = {
             "Accept": "application/json, text/plain, */*",
             "Accept-Encoding": "gzip, deflate, br",
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
@@ -184,6 +184,20 @@ class CustomCrawlRequest(AbstractCrawlRequest):
         self.sequence_name = None
         self.trigger_name = None
         self.candidate_check_props = {}
+
+    def init_props(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+        return self
+
+    # __init__构造器中使用的是crawl_config属性,额外增加config属性等价于crawl_config属性
+    @property
+    def config(self):
+        return self.crawl_config
+
+    @config.setter
+    def config(self, value):
+        self.crawl_config = value
 
     @property
     def session(self) -> Session:
@@ -402,6 +416,8 @@ class CustomCrawlRequest(AbstractCrawlRequest):
                 conn.close()
 
     def _save_one_row(self, row, cursor):
+        if not row:
+            return
         delete_empty_value(row)
         if not row:
             return
@@ -494,6 +510,9 @@ class ConfigurableCrawlRequest(CustomCrawlRequest):
             row_post_filter.filter = self._row_post_processor
             self.filters[4] = row_post_filter
 
+    def add_filter_after_row_processor(self, filter: RowFilter):
+        self.filters.insert(1, filter)
+
     @property
     def field_name_2_new_field_name(self):
         return self._field_name_2_new_field_name
@@ -559,10 +578,58 @@ class ConfigurableCrawlRequest(CustomCrawlRequest):
         pass
 
     @abstractmethod
-    def _row_post_processor(self, row: dict):
+    def _row_post_processor(self, row: dict) -> dict:
         """
         过滤器链中的第五个过滤器
         :param row:
         :return:
         """
         pass
+
+    @property
+    def url(self):
+        return self.request['url']
+
+    @url.setter
+    def url(self, value):
+        self.request['url'] = value
+
+    @property
+    def method(self):
+        return self.request['method']
+
+    @method.setter
+    def method(self, value):
+        self.request['method'] = value
+
+    @property
+    def data(self):
+        return self.request['data']
+
+    @data.setter
+    def data(self, value):
+        self.request['data'] = value
+
+    @property
+    def json(self):
+        return self.request['json']
+
+    @json.setter
+    def json(self, value):
+        self.request['json'] = value
+
+    @property
+    def params(self):
+        return self.request['params']
+
+    @params.setter
+    def params(self, value):
+        self.request['params'] = value
+
+    @property
+    def headers(self):
+        return self.request['headers']
+
+    @headers.setter
+    def headers(self, value):
+        self.request['headers'] = value

@@ -3,10 +3,21 @@ import json
 from crawl_utils.string_utils import remove_space
 
 headers_str = """
-metadata: ProductCode|ProductName|DeadlineBrandiD|IncomeDates|RiskLevel|CurrencyType|IndiiPOMinAmnt|TACode|TAName|ChannelDisincomeRate|IncomeRateDes|Productstatus
-channelid: 267467
-page: 1
-searchword: (DeadlineBrandiD=%)*(IncomeDates=%)*(RiskLevel=%)*(CurrencyType=%)*(IndiIPOMinStauts=%)*(TACode=%)*(ProductStatus='在售' or ProductStatus='停售')*(ProductName!=公司%)*(ProductName!=同业%)*(ProductName!=利多多%)*(ProductName!=财富班车%)*(ProductName!=天添利%)*(ProductName!=启铭%)*(ProductName!=天通利%)*(ProductName!=信托%)*(ProductName!=上信%)*(ProductCode!=2301137335)*(ProductCode!=2301212262)*(ProductCode!=2301228801)*(ProductCode!=2301228803)*(ProductCode!=2301174902)*(ProductCode!=2301174903)*(ProductCode!=2301157376)*(ProductCode!=2301157377)*(ProductCode!=2301229055)
+Accept: */*
+Accept-Encoding: gzip, deflate, br
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
+Cache-Control: no-cache
+Connection: keep-alive
+Host: open.cebbank.com
+Pragma: no-cache
+Referer: http://www.cebbank.com/
+sec-ch-ua: "Google Chrome";v="95", "Chromium";v="95", ";Not A Brand";v="99"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "Windows"
+Sec-Fetch-Dest: script
+Sec-Fetch-Mode: no-cors
+Sec-Fetch-Site: cross-site
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36
 """
 splits = headers_str.split('\n')
 headers_dict = {}
