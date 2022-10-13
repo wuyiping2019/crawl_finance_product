@@ -93,7 +93,7 @@ class ZsyhPCCrawlRequest(ConfigurableCrawlRequest):
 
 
 if __name__ == '__main__':
-    crawl_pc = ZsyhPCCrawlRequest()
+    crawl_pc = ZsyhPCCrawlRequest().init_props(log_id=1)
     crawl_pc.do_crawl()
     # to_json = crawl_pc.to_json('d:"47586"},{PrdCode:"95024",PrdName:"招银理')
     # print(to_json)

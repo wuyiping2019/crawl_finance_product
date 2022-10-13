@@ -15,17 +15,8 @@ logger = get_logger(__name__)
 
 class SpiderFlowImpl(SpiderFlow):
     def callback(self, session: Session, log_id: int, config: CrawlConfig, **kwargs):
-        crawl_pc = ZsyhPCCrawlRequest()
-        crawl_pc.session = session
-        crawl_pc.log_id = log_id
-        crawl_pc.crawl_config = config
-        errors = []
-        try:
-            crawl_pc.do_crawl()
-            logger.info("完成招商银行PC端数据爬取并保存")
-        except Exception as e:
-            errors.append(traceback.format_exc())
-            logger.error("爬取招商银行PC端数据异常")
+        crawl_pc = ZsyhPCCrawlRequest().init_props(session=session, log_id=log_id, config=config)
+        crawl_pc.do_crawl()
 
 
 def do_crawl(config: CrawlConfig):

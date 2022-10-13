@@ -43,13 +43,17 @@ class CustomFilter(logging.Filter):
 def get_logger(name,
                log_level=crawl_config.log_level,
                log_modules=crawl_config.log_modules,
-               filename=crawl_config.log_filename):
+               filename=crawl_config.log_filename,
+               **kwargs):
     if name in logger_dict.keys():
         return logger_dict[name]
     # 创建日志对象
     logger = logging.getLogger(name)
     # 创建日志的输出格式对象
-    formatter = logging.Formatter('%(asctime)s %(levelname)s %(threadName)s %(filename)s %(funcName)s %(message)s')
+    if 'formatter' not in kwargs:
+        formatter = logging.Formatter('%(asctime)s %(levelname)s %(threadName)s %(filename)s %(funcName)s %(message)s')
+    else:
+        formatter = logging.Formatter(kwargs['formatter'])
     # 创建日志过滤器对象
     custom_filter = CustomFilter(log_modules)
     # 创建控制台日志输出handler

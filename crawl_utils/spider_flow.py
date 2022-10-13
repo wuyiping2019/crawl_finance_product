@@ -24,11 +24,8 @@ class SpiderFlow:
         """
                实现具体处理数据的过程
                :param config:
-               :param conn: 数据库连接的Connection对象
-               :param cursor: conn.cursor()获取的指针对象
                :param session: requests.session()获取的session对象
                :param log_id: 本次爬取数据过程在日志表中生成的一条反应爬取过程的日志数据的唯一id
-               :param muti_thread_crawl
                :param kwargs: 额外需要的参数
                :return:
                """
@@ -40,11 +37,9 @@ def process_flow(log_name: str,
                  callback: types.FunctionType | types.LambdaType | SpiderFlow,
                  config: CrawlConfig,
                  **kwargs):
-    conn = None
-    cursor = None
-    session = None
     generated_log_id = None
     count = 0
+    session = None
     try:
         session = requests.session()
         # 记录开始日志
@@ -77,7 +72,7 @@ def process_flow(log_name: str,
         raise e
     finally:
         # 释放资源
-        close([cursor, conn, session])
+        close([session])
 
 
 if __name__ == '__main__':

@@ -1,4 +1,5 @@
 import datetime
+import enum
 import json
 from logging import Logger
 import pymysql
@@ -33,6 +34,15 @@ class DBException(Exception):
     def __init__(self, code, msg):
         self.code = code
         self.msg = msg
+
+
+class DBExceptionEnum(enum.Enum):
+    def __init__(self, code, msg):
+        self.code = code
+        self.msg = msg
+
+    PARAMETER_INVALID = 1, '传入的参数非法:只能传入数据库连接池、Connection对象或Cursor对象'
+    NULL_EXCEPTION = 2, '空指针异常'
 
 
 def getLocalDate():
@@ -496,20 +506,43 @@ def add_field(field_name: str, data_type: str, table_name: str, cursor):
         return False
 
 
-def check_table_exists(table_name, cursor):
+def check_table_exists(table_name, db_obj) -> bool:
     """
     检查数据库中是否存在指定表
     :param table_name:
-    :param cursor:
+    :param db_obj:
     :return:boolean表示判断目标表是否存在
     """
-    sql = f"select 1 from {table_name}"
-    try:
-        cursor.execute(sql)
-        cursor.fetchall()
-        return True
-    except Exception as e:
-        return False
+
+    type_name = type(db_obj).__name__
+    conn = None
+    cursor = None
+    if type_name == 'NoneType':
+        raise DBException(
+            DBExceptionEnum.NULL_EXCEPTION.code,
+            DBExceptionEnum.NULL_EXCEPTION.msg
+        )
+    elif 'Connection' not in type_name and 'Cursor' not in type_name and 'PooledDB' not in type_name:
+        raise DBException(
+            DBExceptionEnum.PARAMETER_INVALID.code,
+            DBExceptionEnum.PARAMETER_INVALID.msg
+        )
+    else:
+        try:
+            if 'PooledDB' in type_name:
+                conn = db_obj.connection()
+                cursor = conn.cursor()
+            elif 'Connection' in type_name:
+                conn = type_name
+                cursor = conn.cursor()
+            elif 'Cursor' in type_name:
+                cursor = db_obj
+            sql = f"select 1 from {table_name}"
+            cursor.execute(sql)
+            return True
+        except Exception as e:
+            close([cursor, conn])
+            return False
 
 
 def process_dict(data_dict: dict):

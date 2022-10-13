@@ -111,6 +111,10 @@ class CrawlConfig:
             if config['pool.activate']['activate'] == 'oracle' \
             else DBType.mysql
         self.state = config['development']['state']
+        self.log_table = config['log_table']['name']
+
+    def close(self):
+        self.db_pool.close()
 
     def __repr__(self):
         return "CrawlConfig(config:%s,db_poll:%s,log_level:%s,max_thread:%s)" % (
@@ -148,7 +152,8 @@ if __name__ == '__main__':
     测试
     """
     print("打印查看:", crawl_config)
-
-
-
-
+    connection = crawl_config.db_pool.connection()
+    cursor = connection.cursor()
+    print(type(connection).__name__)
+    print(type(cursor).__name__)
+    print(type(crawl_config.db_pool).__name__)

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import logging
+import sys
 import time
+import traceback
 import types
 from abc import abstractmethod
 from enum import Enum
@@ -14,14 +17,11 @@ from crawl_utils.custom_exception import cast_exception, CustomException
 from crawl_utils.db_utils import check_table_exists, create_table, update_else_insert_to_db, add_fields
 from crawl_utils.global_config import get_table_name, get_sequence_name, get_trigger_name
 from crawl_utils.logging_utils import get_logger
-from crawl_utils.mappings import FIELD_MAPPINGS
-from crawl_utils.mark_log import getLocalDate
 from config_parser import CrawlConfig, crawl_config
 
-logger = get_logger(name=__name__,
-                    log_level=crawl_config.log_level,
-                    log_modules=crawl_config.log_modules,
-                    filename=crawl_config.log_filename)
+logger = get_logger(name=__name__)
+
+simple_logger = get_logger(name='simple' + __name__, formatter='%(asctime)s %(message)s')
 
 
 class CrawlRequestException(Exception):
@@ -47,6 +47,15 @@ class CrawlRequestExceptionEnum(Enum):
     CHECK_PROPS_NULL_EXCEPTION = 2, '执行更新否则插入操作,需要指定判断一条数据在表中唯一标识的字段列表'
     RECALLING_DO_CRAWL_EXCEPTION = 3, '重复调用do_crawl方法异常'
     CRAWL_FAILED_EXCEPTION = 4, '爬取银行理财产品失败'
+    LOG_ID_ATTR_MISSING = 5, '保存的数据字典中不存在logId的key值'
+    SAVE_TABLE_NOT_EXISTS_EXCEPTION = 6, '目标表不存在'
+    INSERT_ROW_EXCEPTION = 7, '插入数据异常'
+    CRAWL_REQUEST_PRE_CRAWL_EXCEPTION = 8, lambda crawl_type, crawl_name: f'{crawl_type}-{crawl_name}._pre_crawl异常'
+    CRAWL_REQUEST_CONFIG_PARAMS_EXCEPTION = 9, lambda crawl_type, crawl_name: f'{crawl_type}-{crawl_name}._config_params异常'
+    CRAWL_REQUEST_DO_REQUEST_EXCEPTION = 10, lambda crawl_type, crawl_name: f'{crawl_type}-{crawl_name}._do_request异常'
+    CRAWL_REQUEST_PARSE_RESPONSE_EXCEPTION = 11, lambda crawl_type, crawl_name: f'{crawl_type}-{crawl_name}._parse_response异常'
+    CRAWL_REQUEST_FILTER_ROWS_EXCEPTION = 12, lambda crawl_type, crawl_name: f'{crawl_type}-{crawl_name}._filter_rows异常'
+    CRAWL_REQUEST_CONFIG_END_FLAG_EXCEPTION = 13, lambda crawl_type, crawl_name: f'{crawl_type}-{crawl_name}._config_end_flag异常'
 
 
 class AbstractCrawlRequest:
@@ -80,9 +89,25 @@ class SessionRequest:
 
 
 class RowFilter:
+    """
+    2022-10-13:扩展增加name属性
+    为了不影响原代码:使用@property注释增加name方法
+    """
+
+    @property
+    def name(self):
+        return getattr(self, '_name', '')
+
+    def set_name(self, name):
+        setattr(self, '_name', name)
+        return self
+
     @abstractmethod
     def filter(self, row: dict) -> dict:
         pass
+
+    def __repr__(self):
+        return f"RowFilter(name={self.name})"
 
 
 class RowKVTransformAndFilter(RowFilter):
@@ -138,6 +163,9 @@ class RowKVTransformAndFilter(RowFilter):
                     new_row[filter_value] = row.get(key, None)
             return new_row
 
+    def __repr__(self):
+        return f"RowKVTransformAndFilter({self.name})"
+
 
 class CustomCrawlRequest(AbstractCrawlRequest):
     """
@@ -184,11 +212,23 @@ class CustomCrawlRequest(AbstractCrawlRequest):
         self.sequence_name = None
         self.trigger_name = None
         self.candidate_check_props = {}
+        self._error = None
 
     def init_props(self, **kwargs):
+        simple_logger.info(f"开始爬取《{self.name}》的数据...")
+        logger.info(f"正在初始化{type(self).__name__}对象...")
         for k, v in kwargs.items():
             setattr(self, k, v)
+        logger.info(f"成功初始化{type(self).__name__}对象")
         return self
+
+    @property
+    def error(self):
+        return self.error
+
+    @error.setter
+    def error(self, e):
+        pass
 
     # __init__构造器中使用的是crawl_config属性,额外增加config属性等价于crawl_config属性
     @property
@@ -233,14 +273,13 @@ class CustomCrawlRequest(AbstractCrawlRequest):
     def do_crawl(self, **kwargs):
         try:
             self._do_crawl()
+            logger.info(f"{self.name}-成功获取数据")
         except Exception as e:
-            logger.error("爬取%s的数据过程中抛出异常" % self.name)
-            logger.error(f"{e}")
             raise e
         finally:
             # 释放资源
             self.close()
-            logger.info("成功%s的释放资源" % self.name)
+            logger.info(f"{self.name}-成功释放资源")
 
     def _do_crawl(self):
         """
@@ -266,44 +305,85 @@ class CustomCrawlRequest(AbstractCrawlRequest):
                 CrawlRequestExceptionEnum.RECALLING_DO_CRAWL_EXCEPTION.msg
             )
         # 2.执行爬虫数据需要进行的准备工作
-        self._pre_crawl()
-        logger.info("完成CustomCrawlRequest._pre_crawl准备工作")
+        try:
+            self._pre_crawl()
+            logger.info(f"完成{self.name}._pre_crawl准备工作")
+        except Exception as e:
+            raise CrawlRequestException(
+                CrawlRequestExceptionEnum.CRAWL_REQUEST_PRE_CRAWL_EXCEPTION.code,
+                CrawlRequestExceptionEnum.CRAWL_REQUEST_PRE_CRAWL_EXCEPTION.msg(type(self).__name__, self.name)
+            )
         # 5.循环执行爬取数据的工作
-        logger.info("开始循环爬取数据:")
+        logger.info(f"开始循环爬取{self.name}数据:")
         while not self.end_flag:
-            self._config_params()
+            logger.info(f"开始执行《{self.name}._config_params》,设置请求参数")
+            try:
+                self._config_params()
+            except Exception as e:
+                raise CrawlRequestException(
+                    CrawlRequestExceptionEnum.CRAWL_REQUEST_CONFIG_PARAMS_EXCEPTION.code,
+                    CrawlRequestExceptionEnum.CRAWL_REQUEST_CONFIG_PARAMS_EXCEPTION.msg(type(self).__name__, self.name)
+                )
             if isinstance(self.request, dict):
-                logger.info("完成请求参数的配置:")
-                logger.info("url:%s" % self.request.get('url', ''))
-                logger.info("method:%s" % self.request.get('method', ''))
+                logger.info(f"完成{self.name}请求参数的配置:")
+                logger.info(f"{self.name}-请求url:%s" % self.request.get('url', ''))
+                logger.info(f"{self.name}-method:%s" % self.request.get('method', ''))
                 if self.request.get('data', ''):
-                    logger.info("data:%s" % self.request.get('data', ''))
+                    logger.info(f"{self.name}-请求data:%s" % self.request.get('data', ''))
                 if self.request.get('json', ''):
-                    logger.info("json:%s" % self.request.get('json', ''))
+                    logger.info(f"{self.name}-请求json:%s" % self.request.get('json', ''))
                 if self.request.get('params', ''):
-                    logger.info("params:%s" % self.request.get('params', ''))
-            response = self._do_request()
+                    logger.info(f"{self.name}-请求params:%s" % self.request.get('params', ''))
+            try:
+                response = self._do_request()
+            except Exception as e:
+                raise CrawlRequestException(
+                    CrawlRequestExceptionEnum.CRAWL_REQUEST_DO_REQUEST_EXCEPTION.code,
+                    CrawlRequestExceptionEnum.CRAWL_REQUEST_DO_REQUEST_EXCEPTION.msg(type(self).__name__, self.name)
+                )
             time.sleep(1)
             if response.status_code == 200:
-                logger.info("成功获取响应结果,响应状态码:%s" % response.status_code)
+                logger.info(f"{self.name}-成功获取响应结果,响应状态码:%s" % response.status_code)
             else:
-                logger.warn("无法获取响应,响应状态码:%s" % response.status_code)
+                logger.warn(f"{self.name}-无法获取响应,响应状态码:%s" % response.status_code)
                 continue
-            rows = self._parse_response(response)
-            logger.info("完成响应解析,获取%s条数据" % len(rows))
-            rows = self._filter_rows(rows)
-            logger.info("完成数据过滤操作")
+            logger.info(f"{self.name}-开始解析响应结果...")
+            try:
+                rows = self._parse_response(response)
+            except Exception as e:
+                raise CrawlRequestException(
+                    CrawlRequestExceptionEnum.CRAWL_REQUEST_PARSE_RESPONSE_EXCEPTION.code,
+                    CrawlRequestExceptionEnum.CRAWL_REQUEST_PARSE_RESPONSE_EXCEPTION.msg(type(self).__name__, self.name)
+                )
+            logger.info(f"{self.name}-完成响应解析,获取%s条数据" % len(rows))
+            logger.info(f"{self.name}-开始使用过滤器链:%s,处理数据" % self.filters)
+            try:
+                rows = self._filter_rows(rows)
+            except Exception as e:
+                raise CrawlRequestException(
+                    CrawlRequestExceptionEnum.CRAWL_REQUEST_FILTER_ROWS_EXCEPTION.code,
+                    CrawlRequestExceptionEnum.CRAWL_REQUEST_FILTER_ROWS_EXCEPTION.msg(type(self).__name__, self.name)
+                )
+            logger.info(f"完成{self.name}本次请求的数据过滤操作")
             if rows:
                 self.processed_rows += rows
-            self._config_end_flag()
-            logger.info("配置end_flag标识,当前end_flag:%s" % self.end_flag)
-        logger.info("爬虫工作结束")
+            logger.info(f"{self.name}-开始设置{type(self).__name__}的end_flag标识")
+            try:
+                self._config_end_flag()
+            except Exception as e:
+                raise CrawlRequestException(
+                    CrawlRequestExceptionEnum.CRAWL_REQUEST_CONFIG_END_FLAG_EXCEPTION.code,
+                    CrawlRequestExceptionEnum.CRAWL_REQUEST_CONFIG_END_FLAG_EXCEPTION.msg(type(self).__name__, self.name)
+                )
+            logger.info(f"{self.name}-当前{type(self).__name__}的end_flag:%s,%s" %
+                        (self.end_flag, '继续爬取数据' if self.end_flag else '终止数据爬取'))
+        logger.info(f"{self.name}-爬虫工作结束")
         # 标识该方法已经被调用过
         setattr(self, 'do_crawl_exe_flag', True)
         # 保存数据
-        logger.info("开始%s的保存数据" % self.name)
+        logger.info(f"{self.name}-开始%s的保存数据")
         self.do_save()
-        logger.info("成功%s的保存数据" % self.name)
+        logger.info(f"{self.name}-成功%s的保存数据")
 
     def _filter_rows(self, rows: List[dict]) -> List[dict]:
         """
@@ -316,13 +396,13 @@ class CustomCrawlRequest(AbstractCrawlRequest):
         for fil in self.filters:
             new_rows = []
             if not fil:
-                logger.debug(f"filter-{count}-{self.name}为空")
+                logger.debug(f"{self.name}-{type(self).__name__}-filter-{fil.name}-{count}-为空")
                 count += 1
                 continue
             for row in rows:
-                logger.debug(f"filter-{count}-{self.name}处理:{row}")
+                logger.debug(f"{self.name}-{type(self).__name__}-filter-{fil.name}-{count}-处理:{row}")
                 new_row = fil.filter(row)
-                logger.debug(f"filter-{count}-{self.name}处理结果:{new_row}")
+                logger.debug(f"{self.name}-{type(self).__name__}-filter-{fil.name}-{count}-处理结果:{new_row}")
                 new_rows.append(new_row)
             count += 1
             rows = new_rows
@@ -376,38 +456,43 @@ class CustomCrawlRequest(AbstractCrawlRequest):
             )
         conn = None
         cursor = None
-        table_exists_flag = False
         if not self.processed_rows:
             return
         try:
             conn = self.crawl_config.db_pool.connection()
             cursor = conn.cursor()
+            self.save_table = self.save_table if self.save_table else get_table_name(self.mask)
+            if not self.save_table:
+                raise CrawlRequestException(
+                    CrawlRequestExceptionEnum.TABLE_NULL_EXCEPTION.code,
+                    CrawlRequestExceptionEnum.TABLE_NULL_EXCEPTION.msg
+                )
+            logger.info(f"{self.name}开始检测目标表:%s,是否存在" % self.save_table)
+            table_exists_flag = check_table_exists(self.save_table, self.config.db_pool)
+            if table_exists_flag:
+                logger.info(f"{self.name}-检测到{self.save_table}存在")
+            else:
+                logger.warning(f"{self.name}-检测到{self.save_table}不存在")
+                logger.info(f"{self.name}-开始自动创建{self.save_table}")
+                create_table(self.processed_rows[0],
+                             'CLOB' if self.crawl_config.db_type.name == 'oracle' else 'text',
+                             'NUMBER(11)' if self.crawl_config.db_type.name == 'oracle' else 'long',
+                             self.save_table if self.save_table else get_table_name(self.mask),
+                             cursor,
+                             self.sequence_name if self.sequence_name else get_sequence_name(self.mask),
+                             self.trigger_name if self.trigger_name else get_trigger_name(self.mask)
+                             )
             for row in self.processed_rows:
-                logger.debug(f'正在保存{row}')
-                # 判断表是否存在
-                if not table_exists_flag:
-                    table_exists_flag = check_table_exists(
-                        self.save_table if self.save_table else get_table_name(self.mask),
-                        cursor)
-                    if not table_exists_flag:
-                        create_table(row,
-                                     'CLOB' if self.crawl_config.db_type.name == 'oracle' else 'text',
-                                     'NUMBER(11)' if self.crawl_config.db_type.name == 'oracle' else 'long',
-                                     self.save_table if self.save_table else get_table_name(self.mask),
-                                     cursor,
-                                     self.sequence_name if self.sequence_name else get_sequence_name(self.mask),
-                                     self.trigger_name if self.trigger_name else get_trigger_name(self.mask)
-                                     )
-                        table_exists_flag = True
+                logger.debug(f'{self.name}-正在保存{row}')
                 # 执行插入操作
                 self._save_one_row(row, cursor)
-                logger.debug(f"保存{row}")
+                logger.debug(f"{self.name}-成功保存{row}")
             conn.commit()
-            logger.info(f"%s提交保存数据事务" % (self.name + '-'))
+            logger.info(f"{self.name}-提交事务")
         except Exception as e:
             if conn:
-                logger.error(f"%s回滚保存数据事务" % (self.name + '-'))
                 conn.rollback()
+                logger.error(f"{self.name}-回滚事务")
             raise e
         finally:
             if cursor:
@@ -498,7 +583,7 @@ class ConfigurableCrawlRequest(CustomCrawlRequest):
             pass
         else:
             # 当子类实现了_row_processor时
-            row_filter = RowFilter()
+            row_filter = RowFilter().set_name('_row_processor:按实现的该抽象方法处理row')
             row_filter.filter = self._row_processor
             self.filters[0] = row_filter
         # 该过滤器处于过滤器链中的第5个 处于过滤器链中的尾部
@@ -506,12 +591,25 @@ class ConfigurableCrawlRequest(CustomCrawlRequest):
             pass
         else:
             # 当子类实现了_row_processor时
-            row_post_filter = RowFilter()
+            row_post_filter = RowFilter().set_name('_row_post_processor:按实现的该抽象方法处理row')
             row_post_filter.filter = self._row_post_processor
             self.filters[4] = row_post_filter
 
     def add_filter_after_row_processor(self, filter: RowFilter):
         self.filters.insert(1, filter)
+
+    def add_filter_after_filter_by_name(self, add_filter: RowFilter, after_filter_name: str):
+        find_index = 0
+        for index, filter in enumerate(self.filters):
+            if filter.name == after_filter_name:
+                find_index = index
+                break
+        if find_index:
+            if find_index + 1 == len(self.filters):
+                # 表示需要向filter过滤器链最后面增加一个过滤器
+                self.filters.append(add_filter)
+            else:
+                self.filters.insert(find_index + 1, add_filter)
 
     @property
     def field_name_2_new_field_name(self):
@@ -522,8 +620,9 @@ class ConfigurableCrawlRequest(CustomCrawlRequest):
         # 设置该属性会重置过滤器链中第3个和第4个过滤器
         if value:
             self._field_name_2_new_field_name = value
-            self.filters[2] = RowKVTransformAndFilter(value)
-            self.filters[3] = RowKVTransformAndFilter(list(value.values()))
+            self.filters[2] = RowKVTransformAndFilter(value).set_name('FIELD_NAME_2_NEW_FIELD_NAME:按字典映射row中的key值')
+            self.filters[3] = RowKVTransformAndFilter(list(value.values())).set_name(
+                'FIELD_NAME_2_NEW_FIELD_NAME:按字典映射中的value过滤row中的字典')
 
     @property
     def field_value_mapping(self):
@@ -532,8 +631,8 @@ class ConfigurableCrawlRequest(CustomCrawlRequest):
     @field_value_mapping.setter
     def field_value_mapping(self, value):
         # 设置该属性会重置过滤器链中第2个过滤器
-        if value:
-            self.filters[1] = RowKVTransformAndFilter(value)
+        self.filters[1] = RowKVTransformAndFilter(value if value is None else {}).set_name(
+            "FIELD_VALUE_MAPPING:按字典映射配置的字段处理方式处理row中的字段")
 
     @abstractmethod
     def _pre_crawl(self):
