@@ -9,40 +9,43 @@ from requests import Response
 
 from config_parser import crawl_config
 from crawl_utils.common_utils import extract_content_between_content
-from crawl_utils.crawl_request import ConfigurableCrawlRequest
+from crawl_utils.crawl_request import ConfigurableCrawlRequest, RowFilter
 from crawl_utils.mappings import FIELD_MAPPINGS
 from crawl_utils.string_utils import remove_space
-from 华夏银行_完成.hxyh_config import PC_REQUEST_INFO, SLEEP_SECOND
+from 华夏银行_完成.hxyh_config import SLEEP_SECOND, MASK, PC_REQUEST_URL, PC_REQUEST_JSON, \
+    PC_REQUEST_HEADERS, PC_FIELD_VALUE_MAPPING, PC_FIELD_NAME_2_NEW_FIELD_NAME, PC_REQUEST_PARAMS, PC_REQUEST_METHOD
 
 
 class HxyhPCCrawlRequest(ConfigurableCrawlRequest):
     def __init__(self):
-        super().__init__(name='华夏银行PC端')
+        super().__init__(name='华夏银行PC')
         self.page_no = None
         self.total_page = None
-        self.request = {}
-
-    def set_request_params(self):
-        self.request['params'] = {
-            'pageNum': self.page_no,
-            'pageSize': 40
-        }
 
     def _pre_crawl(self):
-        self.request = PC_REQUEST_INFO['request']
-        self.mask = PC_REQUEST_INFO['identifier']
-        self.field_value_mapping = PC_REQUEST_INFO['field_value_mapping']
-        self.field_name_2_new_field_name = PC_REQUEST_INFO['field_name_2_new_field_name']
-        self.check_props = PC_REQUEST_INFO['check_props']
+        self.mask = MASK
+        self.url = PC_REQUEST_URL
+        self.method = PC_REQUEST_METHOD
+        self.json = PC_REQUEST_JSON
+        self.headers = PC_REQUEST_HEADERS
+
+        self.field_value_mapping = PC_FIELD_VALUE_MAPPING
+        self.field_name_2_new_field_name = PC_FIELD_NAME_2_NEW_FIELD_NAME
+
+        self.check_props = ['logId', 'cpbm', 'bank']
         if crawl_config.state == 'DEV':
             self.total_page = 1
+        # 添加解析产品说明书的过滤器
+        row_filter = RowFilter().set_name('_parse_cpsms')
+        row_filter.filter = self._parse_cpsms
+        self.add_filter_after_row_processor(row_filter)
 
     def _config_params(self):
         if self.page_no is None:
             self.page_no = 1
         else:
             self.page_no += 1
-        self.set_request_params()
+        self.params = PC_REQUEST_PARAMS(self.page_no)
 
     def _parse_response(self, response: Response) -> List[dict]:
         resp_str = response.text.encode(response.encoding).decode('utf-8') if response.encoding else response.text
@@ -57,41 +60,39 @@ class HxyhPCCrawlRequest(ConfigurableCrawlRequest):
             self.end_flag = True
 
     def _row_processor(self, row: dict) -> dict:
-        self._parse_cpsms(row)
         return row
 
     def _row_post_processor(self, row: dict):
         return row
 
     def _parse_cpsms(self, row: dict):
-        # 产品说明书
-        cpsms = {
-            'title': '',
-            'url': f'https://www.hxb.com.cn/lcpdf/{row["href"]}.html'
-        }
-        response_sms = self.session.get(url=cpsms['url'], headers={
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
-            "Accept-Encoding": "gzip, deflate, br", "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-            "Cache-Control": "no-cache", "Connection": "keep-alive", "Host": "www.hxb.com.cn", "Pragma": "no-cache",
-            "sec-ch-ua": "\"Google Chrome\";v=\"95\", \"Chromium\";v=\"95\", \";Not A Brand\";v=\"99\"",
-            "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": "\"Windows\"", "Sec-Fetch-Dest": "document",
-            "Sec-Fetch-Mode": "navigate", "Sec-Fetch-Site": "none", "Sec-Fetch-User": "?1",
-            "Upgrade-Insecure-Requests": "1",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36"})
-        time.sleep(SLEEP_SECOND)
-        if response_sms.status_code == 200:
-            pass
-        else:
-            return
-        time.sleep(SLEEP_SECOND)
-        resp_sms_str = response_sms.text.encode(
-            response_sms.encoding).decode('utf-8') if response_sms.encoding else response_sms.text
-        soup = BeautifulSoup(resp_sms_str, 'lxml')
-        title = remove_space(soup.select('h2')[0].text)
-        cpsms['title'] = title
-        row['cpsms'] = json.dumps(cpsms).encode().decode('unicode_escape')
-        # 产品简称
         try:
+            # 产品说明书
+            cpsms = {
+                'title': '',
+                'url': f'https://www.hxb.com.cn/lcpdf/{row["href"]}.html'
+            }
+            response_sms = self.session.get(url=cpsms['url'], headers={
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+                "Accept-Encoding": "gzip, deflate, br", "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+                "Cache-Control": "no-cache", "Connection": "keep-alive", "Host": "www.hxb.com.cn", "Pragma": "no-cache",
+                "sec-ch-ua": "\"Google Chrome\";v=\"95\", \"Chromium\";v=\"95\", \";Not A Brand\";v=\"99\"",
+                "sec-ch-ua-mobile": "?0", "sec-ch-ua-platform": "\"Windows\"", "Sec-Fetch-Dest": "document",
+                "Sec-Fetch-Mode": "navigate", "Sec-Fetch-Site": "none", "Sec-Fetch-User": "?1",
+                "Upgrade-Insecure-Requests": "1",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36"})
+            time.sleep(SLEEP_SECOND)
+            if response_sms.status_code == 200:
+                pass
+            else:
+                return row
+                # 产品简称
+            resp_sms_str = response_sms.text.encode(response_sms.encoding).decode(
+                'utf-8') if response_sms.encoding else response_sms.text
+            soup = BeautifulSoup(resp_sms_str, 'lxml')
+            title = remove_space(soup.select('h2')[0].text)
+            cpsms['title'] = title
+            row['cpsms'] = json.dumps(cpsms).encode().decode('unicode_escape')
             tr_tags = soup.select('.promise-table')[0].select('tr')
             for tr_tag in tr_tags:
                 tds = tr_tag.select('td')
@@ -147,8 +148,9 @@ class HxyhPCCrawlRequest(ConfigurableCrawlRequest):
                         row[FIELD_MAPPINGS['销售区域']] = xsqy
         except Exception as e:
             pass
+        return row
 
 
 if __name__ == '__main__':
-    crawl_pc = HxyhPCCrawlRequest()
+    crawl_pc = HxyhPCCrawlRequest().init_props(log_id=1)
     crawl_pc.do_crawl()

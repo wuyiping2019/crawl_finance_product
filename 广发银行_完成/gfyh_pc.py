@@ -1,7 +1,5 @@
 import re
-import types
 from typing import List
-
 from bs4 import BeautifulSoup
 from requests import Response
 from crawl_utils.crawl_request import ConfigurableCrawlRequest
@@ -12,7 +10,7 @@ from 广发银行_完成.gfyh_config import PC_REQUEST_ITER, PC_METHOD
 
 class GfyhPCCrawlRequest(ConfigurableCrawlRequest):
     def __init__(self):
-        super(GfyhPCCrawlRequest, self).__init__(name='广发银行PC端')
+        super(GfyhPCCrawlRequest, self).__init__(name='广发银行PC')
         self.requests_iter = None
         self.page_no = None
         self.total_page = None
@@ -84,3 +82,10 @@ class GfyhPCCrawlRequest(ConfigurableCrawlRequest):
         row['mark'] = 'PC'
         row['bank'] = '广发银行'
         return row
+
+
+if __name__ == '__main__':
+    crawl_pc = GfyhPCCrawlRequest().init_props(log_id=1)
+    crawl_pc.do_crawl()
+    crawl_pc.close()
+    crawl_pc.config.close()

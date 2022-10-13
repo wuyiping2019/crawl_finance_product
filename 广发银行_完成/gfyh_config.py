@@ -25,6 +25,44 @@ def mobile_yjbjjz(row: dict, key: str) -> tuple:
 
 
 # 针对row的value进行转换
+MOBILE_REQUEST_URL = 'https://wap.cgbchina.com.cn/h5-mobilebank-app/noSessionServlet/hbss/fn20027.lgx'
+MOBILE_REQUEST_METHOD = 'POST'
+MOBILE_REQUEST_JSON = lambda page_no: {
+    "body": {
+        "beginNum": (page_no - 1) * 20,
+        "fetchNum": 20,
+        "channel": "400",
+        "sChannel": "WX",
+        "structDepPrdFlag": "N",
+        "tagflagNew": None,
+        "prdCycle": "",
+        "firstAmt": "",
+        "sortFlag": "0",
+        "curType": "",
+        "riskLevel": "",
+        "prdManagerList": [],
+        "expireType": "",
+        "prdSellStatus": ""
+    },
+    "header": {
+        "senderSN": "1663749151600n2005493",
+        "os": "Win32",
+        "channel": "WX",
+        "secondChannel": "",
+        "scope": "2",
+        "mpSId": "HMBS_C882C49E556385209F40A14EC9972733_1551629178531586048",
+        "utmSource": ""
+    }
+}
+MOBILE_REQUEST_HEADERS = {
+    'host': 'wap.cgbchina.com.cn',
+    'accept': 'application/json, text/plain, */*',
+    'origin': 'https://wap.cgbchina.com.cn',
+    'sendersn': '1663749151600n2005493',
+    'user-agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36 NetType/WIFI MicroMessenger/7.0.20.1781(0x6700143B) WindowsWechat(0x6307062c)',
+    'content-type': 'application/json;charset=UTF-8',
+    'referer': 'https://wap.cgbchina.com.cn/h5-mobilebank-web/h5/investment/self/list?srcChannel=WX&secondaryChannel=WX&mainChannel=400&tab=1&srcScene=GFYHGZH&channel=400&sChannel=MB&faceFlag=LS&isRegistCS=1&HMBA_STACK_HASH=1663748433050',
+}
 MOBILE_FIELD_VALUE_MAPPING = {
     'issPrice': lambda row, key: (key, str(row[key]) + '元'),
     'prdAttr': lambda row, key: (key, '非保本浮动收益类' if str(row[key]) == "1" else '保本浮动收益类'),

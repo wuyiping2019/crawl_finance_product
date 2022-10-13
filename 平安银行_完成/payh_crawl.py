@@ -4,7 +4,7 @@ from requests import Session
 
 from config_parser import CrawlConfig, crawl_config
 from crawl import MutiThreadCrawl
-from crawl_utils.crawl_request import CrawlRequestException, CrawlRequestExceptionEnum
+from crawl_utils.crawl_request import raise_crawl_request_exception
 from crawl_utils.global_config import get_table_name
 from crawl_utils.logging_utils import get_logger
 from crawl_utils.spider_flow import SpiderFlow, process_flow
@@ -17,26 +17,12 @@ logger = get_logger(__name__)
 class SpiderFlowImpl(SpiderFlow):
 
     def callback(self, session: Session, log_id: int, config: CrawlConfig, **kwargs):
-        crawl_pc = PayhPCCrawlRequest()
-        crawl_pc.session = session
-        crawl_pc.log_id = log_id
-        crawl_pc.crawl_config = config
         errors = []
         try:
-            crawl_pc.do_crawl()
+            PayhPCCrawlRequest().init_props(session=session, log_id=log_id, config=config).do_crawl()
         except Exception as e:
-            errors.append(traceback.format_exc())
-            logger.error("处理平安银行PC端数据失败")
-            raise e
-        finally:
-            crawl_pc.close()
-        if errors:
-            logger.error(f"处理平安银行数据,抛出异常个数:%s" % len(errors))
-            error_msg = "\n".join([e for e in errors])
-            raise CrawlRequestException(
-                CrawlRequestExceptionEnum.CRAWL_FAILED_EXCEPTION.code,
-                CrawlRequestExceptionEnum.CRAWL_FAILED_EXCEPTION.msg + ':\n' + error_msg
-            )
+            errors.append(e)
+        raise_crawl_request_exception(errors)
 
 
 def do_crawl(config: CrawlConfig):

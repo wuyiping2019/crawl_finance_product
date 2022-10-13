@@ -7,33 +7,23 @@ from crawl_utils.crawl_request import ConfigurableCrawlRequest
 from crawl_utils.custom_exception import CustomException
 from crawl_utils.db_utils import getLocalDate
 from crawl_utils.mappings import FIELD_MAPPINGS
-from 华夏银行_完成.hxyh_config import MOBILE_REQUEST_INFO
+from 华夏银行_完成.hxyh_config import MASK, MOBILE_FIELD_NAME_2_NEW_FIELD_NAME, \
+    MOBILE_FIELD_VALUE_MAPPING, MOBILE_REQUEST_JSON, MOBILE_REQUEST_URL, MOBILE_REQUEST_METHOD
 
 
 class HxyhMobileCrawlRequest(ConfigurableCrawlRequest):
     def __init__(self):
-        super().__init__(name='华夏银行移动端')
+        super().__init__(name='华夏银行MOBILE')
         self.page_no = None
         self.total_page = None
-        self.request = {}
-
-    def set_request_json(self):
-        self.request['json'] = {
-            "request": {
-                "sortField": "",
-                "sortType": "",
-                "type": "",
-                "productName": "",
-                "page": self.page_no,
-                "hidderLoading": True
-            }
-        }
 
     def _pre_crawl(self):
-        self.mask = MOBILE_REQUEST_INFO['identifier']
-        self.field_name_2_new_field_name = MOBILE_REQUEST_INFO['field_name_2_new_field_name']
-        self.check_props = MOBILE_REQUEST_INFO['check_props']
-        self.request = MOBILE_REQUEST_INFO['request']
+        self.mask = MASK
+        self.url = MOBILE_REQUEST_URL
+        self.method = MOBILE_REQUEST_METHOD
+        self.field_name_2_new_field_name = MOBILE_FIELD_NAME_2_NEW_FIELD_NAME
+        self.field_value_mapping = MOBILE_FIELD_VALUE_MAPPING
+        self.check_props = ['logId', 'cpbm', 'bank']
         if self.crawl_config.state == 'DEV':
             self.total_page = 1
 
@@ -42,7 +32,7 @@ class HxyhMobileCrawlRequest(ConfigurableCrawlRequest):
             self.page_no = 1
         else:
             self.page_no += 1
-        self.set_request_json()
+        self.json = MOBILE_REQUEST_JSON(self.page_no)
 
     def _parse_response(self, response: Response) -> List[dict]:
         resp_str = response.text.encode(response.encoding).decode('utf-8') if response.encoding else response.text
@@ -81,5 +71,5 @@ class HxyhMobileCrawlRequest(ConfigurableCrawlRequest):
 
 
 if __name__ == '__main__':
-    crawl_mobile = HxyhMobileCrawlRequest()
+    crawl_mobile = HxyhMobileCrawlRequest().init_props(log_id=1)
     crawl_mobile.do_crawl()
