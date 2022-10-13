@@ -1,8 +1,6 @@
 import json
 from typing import List
-
 from requests import Response
-
 from crawl_utils.crawl_request import ConfigurableCrawlRequest
 from crawl_utils.db_utils import getLocalDate
 from 浦发银行_完成.pfyh_config import PC_REQUEST_URL, PC_REQUEST_METHOD, PC_REQUEST_HEADERS, PC_REQUEST_DATA, \
@@ -52,3 +50,7 @@ class PfyhPCCrawlRequest(ConfigurableCrawlRequest):
         row['mark'] = 'PC'
         row['bank'] = '浦发银行'
         return row
+
+
+if __name__ == '__main__':
+    PfyhPCCrawlRequest().init_props(log_id=1).do_crawl()

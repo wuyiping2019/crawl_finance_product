@@ -4,7 +4,7 @@ from crawl_utils.mappings import FIELD_MAPPINGS
 
 MASK = 'zggdyh'
 MARK_STR = 'zggdyh'
-LOG_NAME = '中国光大银行_完成'
+LOG_NAME = '中国光大银行'
 SEQUENCE_NAME = f'seq_{MARK_STR}'
 TRIGGER_NAME = f'trigger_{MARK_STR}'
 CRAWL_REQUEST_DETAIL_TABLE = f'crawl_{MARK_STR}'

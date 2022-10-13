@@ -148,6 +148,4 @@ class ZxyhPCCrawlRequest(ConfigurableCrawlRequest):
 
 
 if __name__ == '__main__':
-    crawl_pc = ZxyhPCCrawlRequest()
-    crawl_pc.log_id = 1
-    crawl_pc.do_crawl()
+    ZxyhPCCrawlRequest().init_props(log_id=1).do_crawl()

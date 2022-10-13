@@ -3,18 +3,15 @@ import random
 import re
 import time
 from typing import List
-
-import requests.utils
 from bs4 import BeautifulSoup
 from requests import Response
-
 from crawl_utils.crawl_request import ConfigurableCrawlRequest, RowFilter
 from crawl_utils.db_utils import getLocalDate
-from crawl_utils.html_utils import check_attr, parse_table
+from crawl_utils.html_utils import parse_table
 from crawl_utils.logging_utils import get_logger
 from crawl_utils.string_utils import remove_space
 from 中国光大银行_完成.zggdyh_config import MASK, PC_REQUEST_URL, PC_REQUEST_HEADERS, PC_REQUEST_METHOD, PC_REQUEST_DATA, \
-    PC_REQUEST_PARAMS, PATTERN_E, SLEEP_SECOND, PATTERN_Z, PC_FIELD_NAME_2_NEW_FIELD_NAME
+    PC_REQUEST_PARAMS, PC_FIELD_NAME_2_NEW_FIELD_NAME
 
 logger = get_logger(__name__)
 
@@ -42,7 +39,7 @@ class ZggdyhPCCrawlRequest(ConfigurableCrawlRequest):
             'cpbm': 'cpmc'
         }
 
-        row_filter = RowFilter()
+        row_filter = RowFilter().set_name('get_detail_info')
         row_filter.filter = self.get_detail_info
         self.add_filter_after_row_processor(row_filter)
 
@@ -159,6 +156,4 @@ class ZggdyhPCCrawlRequest(ConfigurableCrawlRequest):
 
 
 if __name__ == '__main__':
-    crawl_pc = ZggdyhPCCrawlRequest()
-    crawl_pc.init_props(log_id=1)
-    crawl_pc.do_crawl()
+    ZggdyhPCCrawlRequest().init_props(log_id=1).do_crawl()

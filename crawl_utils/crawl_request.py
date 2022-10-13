@@ -1,24 +1,16 @@
 from __future__ import annotations
-
-import json
-import logging
-import sys
 import time
-import traceback
-import types
 from abc import abstractmethod
 from enum import Enum
 from typing import List, Dict
-
 import requests
 from requests import Response, Session
-
 from crawl_utils.common_utils import delete_empty_value
 from crawl_utils.custom_exception import cast_exception, CustomException
 from crawl_utils.db_utils import check_table_exists, create_table, update_else_insert_to_db, add_fields
 from crawl_utils.global_config import get_table_name, get_sequence_name, get_trigger_name
 from crawl_utils.logging_utils import get_logger
-from config_parser import CrawlConfig, crawl_config
+from config_parser import CrawlConfig
 
 logger = get_logger(name=__name__)
 
@@ -411,7 +403,7 @@ class CustomCrawlRequest(AbstractCrawlRequest):
         # 标识该方法已经被调用过
         setattr(self, 'do_crawl_exe_flag', True)
         # 保存数据
-        logger.info(f"{self.name}-开始%s的保存数据")
+        logger.info(f"{self.name}-开始保存数据")
         try:
             self.do_save()
         except Exception as e:
@@ -593,7 +585,7 @@ class ConfigurableCrawlRequest(CustomCrawlRequest):
         super().__init__(
             name=name,
             session=requests.session(),
-            config=crawl_config,
+            config=CrawlConfig(),
             check_props=['logId', 'cpbm'],
             mask=identifier
         )
@@ -658,9 +650,10 @@ class ConfigurableCrawlRequest(CustomCrawlRequest):
         # 设置该属性会重置过滤器链中第3个和第4个过滤器
         if value:
             self._field_name_2_new_field_name = value
-            self.filters[2] = RowKVTransformAndFilter(value).set_name('FIELD_NAME_2_NEW_FIELD_NAME:按字典映射row中的key值')
+            self.filters[2] = RowKVTransformAndFilter(value).set_name(
+                'field_name_2_new_field_name:使用该字典的key/value映射转换row中的key值')
             self.filters[3] = RowKVTransformAndFilter(list(value.values())).set_name(
-                'FIELD_NAME_2_NEW_FIELD_NAME:按字典映射中的value过滤row中的字典')
+                'field_name_2_new_field_name:使用该字典的value值过滤row中的key值')
 
     @property
     def field_value_mapping(self):

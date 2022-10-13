@@ -3,17 +3,14 @@ import math
 import re
 import time
 from typing import List
-
 from bs4 import BeautifulSoup
 from requests import Response
-
-from config_parser import crawl_config
+from config_parser import CrawlConfig
 from crawl_utils.common_utils import extract_content_between_content
 from crawl_utils.crawl_request import ConfigurableCrawlRequest, RowFilter
 from crawl_utils.db_utils import getLocalDate
-from crawl_utils.mappings import FIELD_MAPPINGS
 from crawl_utils.string_utils import remove_space
-from 华夏银行_完成.hxyh_config import SLEEP_SECOND, MASK, PC_REQUEST_URL, PC_REQUEST_JSON, \
+from 华夏银行_完成.hxyh_config import MASK, PC_REQUEST_URL, PC_REQUEST_JSON, \
     PC_REQUEST_HEADERS, PC_FIELD_VALUE_MAPPING, PC_FIELD_NAME_2_NEW_FIELD_NAME, PC_REQUEST_PARAMS, PC_REQUEST_METHOD
 
 
@@ -34,7 +31,10 @@ class HxyhPCCrawlRequest(ConfigurableCrawlRequest):
         self.field_name_2_new_field_name = PC_FIELD_NAME_2_NEW_FIELD_NAME
 
         self.check_props = ['logId', 'cpbm', 'bank']
-        if crawl_config.state == 'DEV':
+        self.candidate_check_props = {
+            'cpbm': 'cpmc'
+        }
+        if self.config.state == 'DEV':
             self.total_page = 1
         # 添加解析产品说明书的过滤器
         row_filter = RowFilter().set_name('_parse_cpsms')
@@ -86,12 +86,12 @@ class HxyhPCCrawlRequest(ConfigurableCrawlRequest):
                 "Sec-Fetch-Mode": "navigate", "Sec-Fetch-Site": "none", "Sec-Fetch-User": "?1",
                 "Upgrade-Insecure-Requests": "1",
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36"})
-            time.sleep(SLEEP_SECOND)
+            time.sleep(1)
             if response_sms.status_code == 200:
                 pass
             else:
                 return row
-                # 产品简称
+            # 产品简称
             resp_sms_str = response_sms.text.encode(response_sms.encoding).decode(
                 'utf-8') if response_sms.encoding else response_sms.text
             soup = BeautifulSoup(resp_sms_str, 'lxml')
@@ -105,7 +105,7 @@ class HxyhPCCrawlRequest(ConfigurableCrawlRequest):
                     td_left = remove_space(tds[0].text)
                     if td_left == '产品代码':
                         cpbm = remove_space(tds[1].text)
-                        row[FIELD_MAPPINGS['产品编码']] = cpbm
+                        row['产品编码'] = cpbm
                     if td_left == '全国银行业理财登记系统登记编码':
                         djbm = tds[1].text. \
                             replace('投资者可以依据该登记编码在中国理财网', ''). \
@@ -113,28 +113,28 @@ class HxyhPCCrawlRequest(ConfigurableCrawlRequest):
                             replace('查询产品信息', ''). \
                             replace('(', '').replace(')', '').replace('（', '').replace('）', ''). \
                             strip()
-                        row[FIELD_MAPPINGS['登记编码']] = djbm
+                        row['登记编码'] = djbm
                     if td_left == '产品管理人':
                         glr = remove_space(tds[1].text)
-                        row[FIELD_MAPPINGS['管理人']] = glr
+                        row['管理人'] = glr
                     if td_left == '产品募集方式':
                         mjfs = remove_space(tds[1].text)
-                        row[FIELD_MAPPINGS['募集方式']] = mjfs
+                        row['募集方式'] = mjfs
                     if td_left == '产品运作模式':
                         yzms = remove_space(tds[1].text)
-                        row[FIELD_MAPPINGS['运作模式']] = yzms
+                        row['运作模式'] = yzms
                     if td_left == '产品投资性质':
                         tzxz = remove_space(tds[1].text)
-                        row[FIELD_MAPPINGS['投资性质']] = tzxz
+                        row['投资性质'] = tzxz
                     if td_left == '产品收益类型':
                         sylx = remove_space(tds[1].text)
-                        row[FIELD_MAPPINGS['收益类型']] = sylx
+                        row['收益类型'] = sylx
                     if td_left == '投资及收益币种':
                         bz = remove_space(tds[1].text)
-                        row[FIELD_MAPPINGS['币种']] = bz
+                        row['币种'] = bz
                     if td_left == '产品风险评级':
                         fxdj = extract_content_between_content(remove_space(tds[1].text), '本产品为', '理财产品')
-                        row[FIELD_MAPPINGS['风险等级']] = fxdj
+                        row['风险等级'] = fxdj
                     if td_left == '募集期':
                         pattern = re.compile(r'\d{4}年\d{1,2}月\d{1,2}日－\d{4}年\d{1,2}月\d{1,2}日')
                         findall = re.findall(pattern, remove_space(tds[1].text))
@@ -143,19 +143,18 @@ class HxyhPCCrawlRequest(ConfigurableCrawlRequest):
                             if len(split) == 2:
                                 mjqsrq = split[0]
                                 mjjsrq = split[1]
-                                row[FIELD_MAPPINGS['募集起始日期']] = mjqsrq
-                                row[FIELD_MAPPINGS['募集结束日期']] = mjjsrq
+                                row['募集起始日期'] = mjqsrq
+                                row['募集结束日期'] = mjjsrq
                     if td_left == '成立日':
                         clr = remove_space(tds[1].text)
-                        row[FIELD_MAPPINGS['成立日']] = clr
+                        row['成立日'] = clr
                     if td_left == '发行范围':
                         xsqy = remove_space(tds[1].text)
-                        row[FIELD_MAPPINGS['销售区域']] = xsqy
+                        row['销售区域'] = xsqy
         except Exception as e:
             pass
         return row
 
 
 if __name__ == '__main__':
-    crawl_pc = HxyhPCCrawlRequest().init_props(log_id=1)
-    crawl_pc.do_crawl()
+    HxyhPCCrawlRequest().init_props(log_id=1).do_crawl()

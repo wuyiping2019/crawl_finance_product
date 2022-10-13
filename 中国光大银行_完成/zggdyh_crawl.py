@@ -2,14 +2,11 @@ import traceback
 
 from requests import Session
 
-from config_parser import crawl_config, CrawlConfig
+from config_parser import CrawlConfig
 from crawl_utils.crawl_request import CrawlRequestException, CrawlRequestExceptionEnum
-from crawl_utils.custom_exception import cast_exception, CustomException
-from crawl_utils.db_utils import check_table_exists, create_table, insert_to_db, update_else_insert_to_db, add_fields
 from crawl_utils.logging_utils import get_logger
-from crawl_utils.mark_log import getLocalDate
 from crawl_utils.spider_flow import SpiderFlow, process_flow
-from zggdyh_config import TARGET_TABLE_PROCESSED, STR_TYPE, NUMBER_TYPE, SEQUENCE_NAME, TRIGGER_NAME, LOG_NAME
+from zggdyh_config import TARGET_TABLE_PROCESSED,LOG_NAME
 from 中国光大银行_完成.zggdyh_pc import ZggdyhPCCrawlRequest
 
 logger = get_logger(__name__)
@@ -39,7 +36,4 @@ def do_crawl(config: CrawlConfig):
 
 
 if __name__ == '__main__':
-    process_flow(LOG_NAME,
-                 TARGET_TABLE_PROCESSED,
-                 SpiderFlowImpl(),
-                 config=crawl_config)
+    do_crawl(config=CrawlConfig())

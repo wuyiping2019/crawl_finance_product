@@ -106,5 +106,18 @@ PC_FIELD_NAME_2_NEW_FIELD_NAME = {
     'licaiChannelSource': FIELD_MAPPINGS['销售渠道'],
     'personalFirstBuyLimit': FIELD_MAPPINGS['起购金额'],
     '业绩比较基准': FIELD_MAPPINGS['业绩比较基准'],
-    '产品说明书': FIELD_MAPPINGS['产品说明书']
+    '产品说明书': FIELD_MAPPINGS['产品说明书'],
+    '登记编码': FIELD_MAPPINGS['登记编码'],
+    '产品编码': FIELD_MAPPINGS['产品编码'],
+    '管理人': FIELD_MAPPINGS['管理人'],
+    '募集方式': FIELD_MAPPINGS['募集方式'],
+    '运作模式': FIELD_MAPPINGS['运作模式'],
+    '投资性质': FIELD_MAPPINGS['投资性质'],
+    '收益类型': FIELD_MAPPINGS['收益类型'],
+    '币种': FIELD_MAPPINGS['币种'],
+    '风险等级': FIELD_MAPPINGS['风险等级'],
+    '募集起始日期': FIELD_MAPPINGS['募集起始日期'],
+    '募集结束日期': FIELD_MAPPINGS['募集结束日期'],
+    '成立日': FIELD_MAPPINGS['成立日'],
+    '销售区域': FIELD_MAPPINGS['销售区域']
 }

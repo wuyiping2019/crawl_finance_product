@@ -5,7 +5,7 @@ from requests import Response
 from crawl_utils.crawl_request import ConfigurableCrawlRequest
 from crawl_utils.db_utils import getLocalDate
 from crawl_utils.html_utils import parse_table
-from 广发银行_完成.gfyh_config import PC_REQUEST_ITER, PC_METHOD
+from 广发银行_完成.gfyh_config import PC_REQUEST_ITER, PC_METHOD, MASK
 
 
 class GfyhPCCrawlRequest(ConfigurableCrawlRequest):
@@ -23,7 +23,10 @@ class GfyhPCCrawlRequest(ConfigurableCrawlRequest):
 
     def _pre_crawl(self):
         self.check_props = ['logId', 'cpbm', 'bank']
-        self.mask = 'gfyh'
+        self.mask = MASK
+        self.candidate_check_props = {
+            'cpbm': 'cpmc'
+        }
         self.requests_iter = PC_REQUEST_ITER
         self.current_request_index = 0
         self.total_request_cycle = len(self.requests_iter)
@@ -76,8 +79,6 @@ class GfyhPCCrawlRequest(ConfigurableCrawlRequest):
     def _row_post_processor(self, row: dict):
         row['logId'] = self.log_id
         row['createTime'] = getLocalDate()
-        if 'cpbm' not in row.keys():
-            row['cpbm'] = row['cpmc']
         row['ywfl'] = self.requests_iter[self.current_request_index]['title']
         row['mark'] = 'PC'
         row['bank'] = '广发银行'
@@ -85,7 +86,4 @@ class GfyhPCCrawlRequest(ConfigurableCrawlRequest):
 
 
 if __name__ == '__main__':
-    crawl_pc = GfyhPCCrawlRequest().init_props(log_id=1)
-    crawl_pc.do_crawl()
-    crawl_pc.close()
-    crawl_pc.config.close()
+    GfyhPCCrawlRequest().init_props(log_id=1).do_crawl()

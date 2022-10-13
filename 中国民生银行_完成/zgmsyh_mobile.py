@@ -142,5 +142,4 @@ class ZgmsyhMobileCrawlRequest(ConfigurableCrawlRequest):
 
 
 if __name__ == '__main__':
-    crawl_mobile = ZgmsyhMobileCrawlRequest().init_props(log_id=1)
-    crawl_mobile.do_crawl()
+    ZgmsyhMobileCrawlRequest().init_props(log_id=1).do_crawl()

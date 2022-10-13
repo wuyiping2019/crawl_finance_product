@@ -1,9 +1,6 @@
 import traceback
-
 from requests import Session
-
-from config_parser import CrawlConfig, crawl_config
-from crawl import MutiThreadCrawl
+from config_parser import CrawlConfig
 from crawl_utils.crawl_request import CrawlRequestException, CrawlRequestExceptionEnum
 from crawl_utils.custom_exception import cast_exception, CustomException
 from crawl_utils.db_utils import update_else_insert_to_db, check_table_exists, create_table, add_fields, close
@@ -42,13 +39,16 @@ class SpiderFlowImpl(SpiderFlow):
             row['logId'] = log_id
             row['createTime'] = getLocalDate()
             try:
-                update_else_insert_to_db(cursor, TARGET_TABLE_PROCESSED, row, {'logId': log_id, 'cpbm': row['cpbm']})
+                key = 'cpbm' if 'cpbm' in row.keys() else 'cpmc'
+                value = row['cpbm'] if 'cpbm' in row.keys() else row['cpmc']
+                update_else_insert_to_db(cursor, TARGET_TABLE_PROCESSED, row,
+                                         {'logId': log_id, key: value})
             except Exception as e:
                 exception = cast_exception(e)
                 if isinstance(exception, CustomException) and exception.code == 1:
                     add_fields(cursor, TARGET_TABLE_PROCESSED, row.keys(), STR_TYPE)
                     update_else_insert_to_db(cursor, TARGET_TABLE_PROCESSED, row,
-                                             {'logId': log_id, 'cpbm': row['cpbm']})
+                                             {'logId': log_id, key: value})
                 else:
                     raise exception
 
@@ -69,4 +69,4 @@ def do_crawl(config: CrawlConfig):
 
 
 if __name__ == '__main__':
-    do_crawl(config=crawl_config)
+    do_crawl(config=CrawlConfig())

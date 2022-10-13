@@ -1,8 +1,5 @@
-import traceback
-
 from requests import Session
-
-from config_parser import CrawlConfig, crawl_config
+from config_parser import CrawlConfig
 from crawl_utils.crawl_request import raise_crawl_request_exception
 from crawl_utils.global_config import get_table_name
 from crawl_utils.spider_flow import SpiderFlow, process_flow
@@ -30,4 +27,4 @@ def do_crawl(config: CrawlConfig):
 
 
 if __name__ == '__main__':
-    do_crawl(config=crawl_config)
+    do_crawl(config=CrawlConfig())

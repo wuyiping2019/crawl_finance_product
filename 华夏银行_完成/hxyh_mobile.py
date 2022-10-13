@@ -71,5 +71,4 @@ class HxyhMobileCrawlRequest(ConfigurableCrawlRequest):
 
 
 if __name__ == '__main__':
-    crawl_mobile = HxyhMobileCrawlRequest().init_props(log_id=1)
-    crawl_mobile.do_crawl()
+    HxyhMobileCrawlRequest().init_props(log_id=1).do_crawl()

@@ -6,11 +6,9 @@ import threading
 import time
 import traceback
 from logging import Logger
-
-import 中国光大银行_完成
 from crawl_utils.custom_exception import CustomException
 import inspect
-from config_parser import crawl_config, CrawlConfig
+from config_parser import CrawlConfig
 from crawl_utils.db_utils import check_table_exists
 from crawl_utils.logging_utils import get_logger
 
@@ -100,15 +98,13 @@ if __name__ == '__main__':
     [crawl]区域以module=func的方式进行配置
     调用func的时候会自动传入解析crawl.cfg的CrawlConfig对象(该对象的解析逻辑在config_parser模块中)
     """
+    crawl_config = CrawlConfig()
     logger = get_logger(name=__name__)
     # 1.检测是否存在记录日志的表
     log_table_exists_flag = check_table_exists(crawl_config.log_table, crawl_config.db_pool)
     if not log_table_exists_flag:
         logger.error("无法检测到记录日志的表:%s" % crawl_config.log_table)
-        logger.info(f"释放CrawlConfig资源...")
-        crawl_config.close()
-        logger.info(f"成功释放CrawlConfig资源")
-        logger.error(f"爬虫程序退出")
+        logger.error(f"爬虫程序退出准备退出...")
         sys.exit(1)
     else:
         logger.info("检测到记录日志的表:%s" % crawl_config.log_table)
@@ -140,8 +136,4 @@ if __name__ == '__main__':
     except Exception as e:
         raise e
     finally:
-        logger.info('所有线程爬虫线程执行完毕,准备关闭数据库连接池')
-        if crawl_config.db_pool:
-            logger.info('关闭数据库连接池')
-            crawl_config.db_pool.close()
-            logger.info('成功关闭数据库连接池')
+        logger.info('所有线程爬虫线程执行完毕,准备退出爬虫程序...')

@@ -1,9 +1,7 @@
 from __future__ import annotations
 import logging
 import threading
-import typing
-
-from config_parser import crawl_config
+from config_parser import CrawlConfig
 from crawl_utils.custom_exception import CustomException
 from crawl_utils.db_utils import getLocalDate
 
@@ -26,6 +24,7 @@ from crawl_utils.db_utils import getLocalDate
 # 将创建的logger对象以name:logger字典的形式保存在该变量中
 # name单例对象
 logger_dict = {}
+crawl_config = CrawlConfig()
 
 
 class CustomFilter(logging.Filter):

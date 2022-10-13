@@ -1,12 +1,17 @@
-import abc
 import argparse
 import configparser
+import enum
+import functools
 import logging
 import os
+import threading
 import typing
+from concurrent.futures import ThreadPoolExecutor
+
 from dbutils.pooled_db import PooledDB
 from crawl_utils.db_utils import get_db_poll
 from crawl_utils.global_config import DBType
+import atexit
 
 """
 解析crawl.cfg配置文件
@@ -21,6 +26,21 @@ console_handler = logging.StreamHandler()
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 logger.setLevel("DEBUG")
+
+
+class ConfigParserException(Exception):
+    def __init__(self, code, msg, **kwargs):
+        super(ConfigParserException, self).__init__()
+        self.code = code
+        self.msg = msg
+
+
+class ConfigParserExceptionEnum(enum.Enum):
+    def __init__(self, code, msg):
+        self.code = code
+        self.msg = msg
+
+    POOL_DB_INITIALIZE_EXCEPTION = 1, '初始化数据库连接池失败'
 
 
 def cast_data(value, value_type):
@@ -95,65 +115,118 @@ def init_obj(config: dict) -> None:
     # 1.初始化数据库连接池
     # 1.1 获取需要初始化的数据库类型
     pool_type = config['pool.activate']['activate']
-    pool = init_db_poll(config, pool_type)
-    config['db_pool'] = pool
+    try:
+        pool = init_db_poll(config, pool_type)
+        config['db_pool'] = pool
+    except Exception as e:
+        raise ConfigParserException(
+            code=ConfigParserExceptionEnum.POOL_DB_INITIALIZE_EXCEPTION.code,
+            msg=ConfigParserExceptionEnum.POOL_DB_INITIALIZE_EXCEPTION.msg,
+            error=e
+        )
+
+
+def synchronized(func):
+    func.__lock__ = threading.Lock()
+
+    def lock_func(*args, **kwargs):
+        with func.__lock__:
+            return func(*args, **kwargs)
+
+    return lock_func
 
 
 class CrawlConfig:
-    def __init__(self, config):
-        self.config = config
-        self.db_pool = config['db_pool']
-        self.log_level = config['logger']['level']
-        self.log_modules = config['logger']['modules']
-        self.max_thread = config['thread']['max_thread']
-        self.log_filename = config['logger'].get('filename', None)
-        self.db_type: DBType = DBType.oracle \
-            if config['pool.activate']['activate'] == 'oracle' \
-            else DBType.mysql
-        self.state = config['development']['state']
-        self.log_table = config['log_table']['name']
+    _instance = None
+    _init_flag = False
 
-    def close(self):
-        self.db_pool.close()
+    @synchronized
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = object.__new__(cls)
+        return cls._instance
+
+    @synchronized
+    def __init__(self):
+        if not self._init_flag:
+            config = self.parse_config()
+            self.config = config
+            self.db_pool = config['db_pool']
+            self.log_level = config['logger']['level']
+            self.log_modules = config['logger']['modules']
+            self.max_thread = config['thread']['max_thread']
+            self.log_filename = config['logger'].get('filename', None)
+            self.db_type: DBType = DBType.oracle \
+                if config['pool.activate']['activate'] == 'oracle' \
+                else DBType.mysql
+            self.state = config['development']['state']
+            self.log_table = config['log_table']['name']
+            self._init_flag = True
+
+    @classmethod
+    def close(cls):
+        db_poll = None
+        try:
+            db_poll = cls._instance.db_pool
+        except Exception:
+            pass
+        if db_poll:
+            db_poll.close()
+            logger.info(f"成功关闭数据库连接池")
 
     def __repr__(self):
         return "CrawlConfig(config:%s,db_poll:%s,log_level:%s,max_thread:%s)" % (
             self.config, self.db_pool, self.log_level, self.max_thread)
 
+    @staticmethod
+    def parse_config():
+        # 1.解析crawl.cfg配置文件
+        try:
+            cfg = parse_crawl_cfg()
+            logger.info("成功解析crawl.cfg文件")
+        except Exception as e:
+            logger.exception("解析crawl.cfg配置文件失败")
+            raise e
+        # 2.解析命令行参数
+        try:
+            parse_command_args(cfg)
+            logger.info("成功解析命令行参数")
+        except Exception as e:
+            logger.exception("解析命令行参数失败")
+            raise e
+        # 3.初始化必要的对象
+        try:
+            init_obj(cfg)
+            logger.info("成功初始化对象")
+        except Exception as e:
+            logger.exception("初始化对象失败")
+            raise e
+        return cfg
 
-# 1.解析crawl.cfg配置文件
-try:
-    cfg = parse_crawl_cfg()
-    logger.info("成功解析crawl.cfg文件")
-except Exception as e:
-    logger.exception("解析crawl.cfg配置文件失败")
-    raise e
-# 2.解析命令行参数
-try:
-    parse_command_args(cfg)
-    logger.info("成功解析命令行参数")
-except Exception as e:
-    logger.exception("解析命令行参数失败")
-    raise e
-# 3.初始化必要的对象
-try:
-    init_obj(cfg)
-    logger.info("成功初始化对象")
-except Exception as e:
-    logger.exception("初始化对象失败")
-    raise e
 
-crawl_config = CrawlConfig(config=cfg)
+def exitfunc():
+    logger.info("程序结束回调函数,释放连接池资源")
+    CrawlConfig.close()
+    logger.info("在程序结束之前成功释放连接池资源")
 
-__all__ = ['crawl_config', 'CrawlConfig']
+
+# 程序结束之前的回调函数
+atexit.register(exitfunc)
+
+__all__ = ['CrawlConfig']
 
 if __name__ == '__main__':
     """
-    测试
+    测试 CrawlConfig是线程安全的单例对象(只初始化一次)
     """
-    print("打印查看:", crawl_config)
-    connection = crawl_config.db_pool.connection()
-    cursor = connection.cursor()
-    print(type(connection).__name__)
-    print(type(cursor).__name__)
-    print(type(crawl_config.db_pool).__name__)
+
+
+    def run_job(num):
+        crawl_config = CrawlConfig()
+        print("Thread:%s ID:%s POOL:%s" % (num, id(crawl_config), id(crawl_config.db_pool)))
+        print('\n')
+
+
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        for line in range(50):
+            pool.submit(run_job, line)

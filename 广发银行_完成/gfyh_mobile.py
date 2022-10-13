@@ -56,7 +56,5 @@ class GfyhMobileCrawlRequest(ConfigurableCrawlRequest):
 
 
 if __name__ == '__main__':
-    crawl_mobile = GfyhMobileCrawlRequest().init_props(log_id=1)
-    crawl_mobile.do_crawl()
-    crawl_mobile.close()
-    crawl_mobile.config.close()
+    GfyhMobileCrawlRequest().init_props(log_id=1).do_crawl()
+
