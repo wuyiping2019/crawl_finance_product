@@ -10,6 +10,7 @@ from requests import Response
 from config_parser import crawl_config
 from crawl_utils.common_utils import extract_content_between_content
 from crawl_utils.crawl_request import ConfigurableCrawlRequest, RowFilter
+from crawl_utils.db_utils import getLocalDate
 from crawl_utils.mappings import FIELD_MAPPINGS
 from crawl_utils.string_utils import remove_space
 from 华夏银行_完成.hxyh_config import SLEEP_SECOND, MASK, PC_REQUEST_URL, PC_REQUEST_JSON, \
@@ -63,6 +64,10 @@ class HxyhPCCrawlRequest(ConfigurableCrawlRequest):
         return row
 
     def _row_post_processor(self, row: dict):
+        row['logId'] = self.log_id
+        row['createTime'] = getLocalDate()
+        row['mark'] = 'PC'
+        row['bank'] = '华夏银行'
         return row
 
     def _parse_cpsms(self, row: dict):
