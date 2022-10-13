@@ -69,11 +69,13 @@ class MutiThreadCrawl:
         return thread
 
     def wrapper_func(self, thread_func, *args):
-        thread_func(*args)
-        # try:
-        #     thread_func(*args)
-        # except Exception as e:
-        #     logger.warn(traceback.format_exc())
+        # thread_func(*args)
+        try:
+            # 实际执行爬虫的方法
+            thread_func(*args)
+        except Exception as e:
+            # 应该尽可能保证线程内部不出现异常
+            logger.warn(traceback.format_exc())
         # 线程任务执行完毕 线程数 - 1
         self.set_thread_num(self.get_thread_num() - 1)
         self.logger.info(f'{threading.current_thread().name}线程完成,当前执行线程数:{self.get_thread_num()}')

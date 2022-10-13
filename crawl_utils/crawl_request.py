@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import sys
 import time
@@ -29,13 +30,18 @@ class CrawlRequestException(Exception):
     code及其对应msg信息在CrawlRequestExceptionEnum中
     """
 
-    def __init__(self, code, msg):
+    def __init__(self, code, msg, **kwargs):
         """
         :param code:错误唯一
         :param msg: 错误信息
         """
         self.code = code
         self.msg = msg
+        self.kwargs = kwargs
+
+
+def do_crawl_exception(method):
+    return lambda crawl_type, crawl_name: f'{crawl_type}-{crawl_name}.{method}异常'
 
 
 class CrawlRequestExceptionEnum(Enum):
@@ -50,12 +56,13 @@ class CrawlRequestExceptionEnum(Enum):
     LOG_ID_ATTR_MISSING = 5, '保存的数据字典中不存在logId的key值'
     SAVE_TABLE_NOT_EXISTS_EXCEPTION = 6, '目标表不存在'
     INSERT_ROW_EXCEPTION = 7, '插入数据异常'
-    CRAWL_REQUEST_PRE_CRAWL_EXCEPTION = 8, lambda crawl_type, crawl_name: f'{crawl_type}-{crawl_name}._pre_crawl异常'
-    CRAWL_REQUEST_CONFIG_PARAMS_EXCEPTION = 9, lambda crawl_type, crawl_name: f'{crawl_type}-{crawl_name}._config_params异常'
-    CRAWL_REQUEST_DO_REQUEST_EXCEPTION = 10, lambda crawl_type, crawl_name: f'{crawl_type}-{crawl_name}._do_request异常'
-    CRAWL_REQUEST_PARSE_RESPONSE_EXCEPTION = 11, lambda crawl_type, crawl_name: f'{crawl_type}-{crawl_name}._parse_response异常'
-    CRAWL_REQUEST_FILTER_ROWS_EXCEPTION = 12, lambda crawl_type, crawl_name: f'{crawl_type}-{crawl_name}._filter_rows异常'
-    CRAWL_REQUEST_CONFIG_END_FLAG_EXCEPTION = 13, lambda crawl_type, crawl_name: f'{crawl_type}-{crawl_name}._config_end_flag异常'
+    CRAWL_REQUEST_PRE_CRAWL_EXCEPTION = 8, do_crawl_exception('_pre_crawl')
+    CRAWL_REQUEST_CONFIG_PARAMS_EXCEPTION = 9, do_crawl_exception('_config_params')
+    CRAWL_REQUEST_DO_REQUEST_EXCEPTION = 10, do_crawl_exception('_do_request')
+    CRAWL_REQUEST_PARSE_RESPONSE_EXCEPTION = 11, do_crawl_exception('_parse_response')
+    CRAWL_REQUEST_FILTER_ROWS_EXCEPTION = 12, do_crawl_exception('_filter_rows')
+    CRAWL_REQUEST_CONFIG_END_FLAG_EXCEPTION = 13, do_crawl_exception('_config_end_flag')
+    CRAWL_REQUEST_DO_SAVE_EXCEPTION = 14, do_crawl_exception('do_save')
 
 
 class AbstractCrawlRequest:
@@ -212,7 +219,6 @@ class CustomCrawlRequest(AbstractCrawlRequest):
         self.sequence_name = None
         self.trigger_name = None
         self.candidate_check_props = {}
-        self._error = None
 
     def init_props(self, **kwargs):
         simple_logger.info(f"开始爬取《{self.name}》的数据...")
@@ -221,14 +227,6 @@ class CustomCrawlRequest(AbstractCrawlRequest):
             setattr(self, k, v)
         logger.info(f"成功初始化{type(self).__name__}对象")
         return self
-
-    @property
-    def error(self):
-        return self.error
-
-    @error.setter
-    def error(self, e):
-        pass
 
     # __init__构造器中使用的是crawl_config属性,额外增加config属性等价于crawl_config属性
     @property
@@ -275,6 +273,7 @@ class CustomCrawlRequest(AbstractCrawlRequest):
             self._do_crawl()
             logger.info(f"{self.name}-成功获取数据")
         except Exception as e:
+            # 此处抛出的异常全部都是CrawlRequestException类型的异常
             raise e
         finally:
             # 释放资源
@@ -310,8 +309,9 @@ class CustomCrawlRequest(AbstractCrawlRequest):
             logger.info(f"完成{self.name}._pre_crawl准备工作")
         except Exception as e:
             raise CrawlRequestException(
-                CrawlRequestExceptionEnum.CRAWL_REQUEST_PRE_CRAWL_EXCEPTION.code,
-                CrawlRequestExceptionEnum.CRAWL_REQUEST_PRE_CRAWL_EXCEPTION.msg(type(self).__name__, self.name)
+                code=CrawlRequestExceptionEnum.CRAWL_REQUEST_PRE_CRAWL_EXCEPTION.code,
+                msg=CrawlRequestExceptionEnum.CRAWL_REQUEST_PRE_CRAWL_EXCEPTION.msg(type(self).__name__, self.name),
+                error=e
             )
         # 5.循环执行爬取数据的工作
         logger.info(f"开始循环爬取{self.name}数据:")
@@ -321,8 +321,10 @@ class CustomCrawlRequest(AbstractCrawlRequest):
                 self._config_params()
             except Exception as e:
                 raise CrawlRequestException(
-                    CrawlRequestExceptionEnum.CRAWL_REQUEST_CONFIG_PARAMS_EXCEPTION.code,
-                    CrawlRequestExceptionEnum.CRAWL_REQUEST_CONFIG_PARAMS_EXCEPTION.msg(type(self).__name__, self.name)
+                    code=CrawlRequestExceptionEnum.CRAWL_REQUEST_CONFIG_PARAMS_EXCEPTION.code,
+                    msg=CrawlRequestExceptionEnum.CRAWL_REQUEST_CONFIG_PARAMS_EXCEPTION.msg(type(self).__name__,
+                                                                                            self.name),
+                    error=e
                 )
             if isinstance(self.request, dict):
                 logger.info(f"完成{self.name}请求参数的配置:")
@@ -338,8 +340,10 @@ class CustomCrawlRequest(AbstractCrawlRequest):
                 response = self._do_request()
             except Exception as e:
                 raise CrawlRequestException(
-                    CrawlRequestExceptionEnum.CRAWL_REQUEST_DO_REQUEST_EXCEPTION.code,
-                    CrawlRequestExceptionEnum.CRAWL_REQUEST_DO_REQUEST_EXCEPTION.msg(type(self).__name__, self.name)
+                    code=CrawlRequestExceptionEnum.CRAWL_REQUEST_DO_REQUEST_EXCEPTION.code,
+                    msg=CrawlRequestExceptionEnum.CRAWL_REQUEST_DO_REQUEST_EXCEPTION.msg(type(self).__name__,
+                                                                                         self.name),
+                    error=e
                 )
             time.sleep(1)
             if response.status_code == 200:
@@ -352,8 +356,10 @@ class CustomCrawlRequest(AbstractCrawlRequest):
                 rows = self._parse_response(response)
             except Exception as e:
                 raise CrawlRequestException(
-                    CrawlRequestExceptionEnum.CRAWL_REQUEST_PARSE_RESPONSE_EXCEPTION.code,
-                    CrawlRequestExceptionEnum.CRAWL_REQUEST_PARSE_RESPONSE_EXCEPTION.msg(type(self).__name__, self.name)
+                    code=CrawlRequestExceptionEnum.CRAWL_REQUEST_PARSE_RESPONSE_EXCEPTION.code,
+                    msg=CrawlRequestExceptionEnum.CRAWL_REQUEST_PARSE_RESPONSE_EXCEPTION.msg(type(self).__name__,
+                                                                                             self.name),
+                    error=e
                 )
             logger.info(f"{self.name}-完成响应解析,获取%s条数据" % len(rows))
             logger.info(f"{self.name}-开始使用过滤器链:%s,处理数据" % self.filters)
@@ -361,8 +367,10 @@ class CustomCrawlRequest(AbstractCrawlRequest):
                 rows = self._filter_rows(rows)
             except Exception as e:
                 raise CrawlRequestException(
-                    CrawlRequestExceptionEnum.CRAWL_REQUEST_FILTER_ROWS_EXCEPTION.code,
-                    CrawlRequestExceptionEnum.CRAWL_REQUEST_FILTER_ROWS_EXCEPTION.msg(type(self).__name__, self.name)
+                    code=CrawlRequestExceptionEnum.CRAWL_REQUEST_FILTER_ROWS_EXCEPTION.code,
+                    msg=CrawlRequestExceptionEnum.CRAWL_REQUEST_FILTER_ROWS_EXCEPTION.msg(type(self).__name__,
+                                                                                          self.name),
+                    error=e
                 )
             logger.info(f"完成{self.name}本次请求的数据过滤操作")
             if rows:
@@ -372,8 +380,10 @@ class CustomCrawlRequest(AbstractCrawlRequest):
                 self._config_end_flag()
             except Exception as e:
                 raise CrawlRequestException(
-                    CrawlRequestExceptionEnum.CRAWL_REQUEST_CONFIG_END_FLAG_EXCEPTION.code,
-                    CrawlRequestExceptionEnum.CRAWL_REQUEST_CONFIG_END_FLAG_EXCEPTION.msg(type(self).__name__, self.name)
+                    code=CrawlRequestExceptionEnum.CRAWL_REQUEST_CONFIG_END_FLAG_EXCEPTION.code,
+                    msg=CrawlRequestExceptionEnum.CRAWL_REQUEST_CONFIG_END_FLAG_EXCEPTION.msg(type(self).__name__,
+                                                                                              self.name),
+                    error=e
                 )
             logger.info(f"{self.name}-当前{type(self).__name__}的end_flag:%s,%s" %
                         (self.end_flag, '继续爬取数据' if self.end_flag else '终止数据爬取'))
@@ -382,7 +392,15 @@ class CustomCrawlRequest(AbstractCrawlRequest):
         setattr(self, 'do_crawl_exe_flag', True)
         # 保存数据
         logger.info(f"{self.name}-开始%s的保存数据")
-        self.do_save()
+        try:
+            self.do_save()
+        except Exception as e:
+            raise CrawlRequestException(
+                code=CrawlRequestExceptionEnum.CRAWL_REQUEST_DO_SAVE_EXCEPTION.code,
+                msg=CrawlRequestExceptionEnum.CRAWL_REQUEST_DO_SAVE_EXCEPTION.msg(type(self).__name__, self.name),
+                error=e
+
+            )
         logger.info(f"{self.name}-成功%s的保存数据")
 
     def _filter_rows(self, rows: List[dict]) -> List[dict]:
