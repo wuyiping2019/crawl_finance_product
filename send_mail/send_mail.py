@@ -72,7 +72,7 @@ class MessageFactory:
         return message
 
 
-class MailMailBySMTP(Mail):
+class MailBySMTP(Mail):
     """
     实现发送邮件的功能类：线程安全的单例对象
     """
