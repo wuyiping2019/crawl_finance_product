@@ -1,9 +1,15 @@
 import enum
 import logging
+import mimetypes
 import threading
 from abc import abstractmethod
 from concurrent.futures import ThreadPoolExecutor
-
+import smtplib
+from email import encoders
+from email.header import Header
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from send_mail_config import send_mail_log_formatter, send_mail_log_level
 
 logger = logging.getLogger(__name__)
@@ -29,6 +35,8 @@ class MailExceptionEnum(enum.Enum):
 
     MAIL_UTILS_INSTANTIATION_EXCEPTION = 1, 'MailUtils实例化失败'
     MAIL_UTILS_INITIALIZATION_EXCEPTION = 2, 'MailUtils对象初始化失败'
+    MAIL_SMTP_CONNECTION_EXCEPTION = 3, '无法连接到邮件服务器'
+    MAIL_SMTP_LOGIN_FAILED_EXCEPTION = 4, '邮箱认证失败'
 
 
 class Mail:
@@ -37,11 +45,34 @@ class Mail:
     """
 
     @abstractmethod
-    def send_mail(self):
+    def send_mail(self, *args, **kwargs):
         pass
 
 
-class MailUtils(Mail):
+class MessageFactory:
+    def create_smtp_message(self, sender, receivers, subject, content, attach_files):
+        # 创建一个带附件的实例
+        message = MIMEMultipart()
+        message['From'] = sender
+        message['To'] = COMMASPACE
+        message['Subject'] = Header(subject, 'utf-8')
+        # 邮件正文内容
+        message.attach(MIMEText(content, 'plain', 'utf-8'))
+        part = MIMEBase('application', 'octet-stream')
+        # 此处的path是需要添加附件的文件路径
+        for file in attach_files:
+            ctype, encoding = mimetypes.guess_type(file)
+            if ctype is None or encoding is not None:
+                ctype = dtype
+        part.set_payload(open(self.path, "rb").read())
+        encoders.encode_base64(part)
+        # filename表示附件中文件的命名
+        part.add_header('Content-Disposition', 'attachment', filename=self.filename)
+        message.attach(part)
+        return message
+
+
+class MailMailBySMTP(Mail):
     """
     实现发送邮件的功能类：线程安全的单例对象
     """
@@ -75,13 +106,25 @@ class MailUtils(Mail):
         finally:
             cls.lock.release()
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self,
+                 sender,
+                 receivers,
+                 server,
+                 username,
+                 password,
+                 *args,
+                 **kwargs):
         self.lock.acquire()
         try:
             if self._init_flag:
                 pass
             else:
                 # TODO 定义初始化逻辑
+                self.sender = sender
+                self.receivers = receivers
+                self.server = server
+                self.username = username
+                self.password = password
                 logger.info('初始化MailUtils对象')
                 self._init_flag = True
         except Exception as e:
@@ -93,8 +136,46 @@ class MailUtils(Mail):
         finally:
             self.lock.release()
 
-    def send_mail(self):
-        pass
+    def get_smtp_obj(self):
+        smtp_obj = smtplib.SMTP_SSL(self.server)
+        try:
+            smtp_obj.connect(self.server)
+        except Exception as e:
+            raise MailException(
+                code=MailExceptionEnum.MAIL_SMTP_CONNECTION_EXCEPTION.code,
+                msg=MailExceptionEnum.MAIL_SMTP_CONNECTION_EXCEPTION.msg,
+                error=e
+            )
+        try:
+            smtp_obj.login(user=self.username, password=self.password)
+        except Exception as e:
+            raise MailException(
+                code=MailExceptionEnum.MAIL_SMTP_LOGIN_FAILED_EXCEPTION.code,
+                msg=MailExceptionEnum.MAIL_SMTP_LOGIN_FAILED_EXCEPTION.msg,
+                error=e
+            )
+        return smtp_obj
+
+    def send_mail(self, sender, receivers, server, message):
+        smtp_obj = self.get_smtp_obj()
+        smtp_obj.sendmail(self.sender, self.receivers, message.as_string())
+
+    def create_message(self):
+        # 创建一个带附件的实例
+        message = MIMEMultipart()
+        message['From'] = self.sender
+        message['To'] = self.receivers
+        message['Subject'] = Header(self.mail_title, 'utf-8')
+        # 邮件正文内容
+        message.attach(MIMEText('请查收附件数据 from 弘康！', 'plain', 'utf-8'))
+        part = MIMEBase('application', 'octet-stream')
+        # 此处的path是需要添加附件的文件路径
+        part.set_payload(open(self.path, "rb").read())
+        encoders.encode_base64(part)
+        # filename表示附件中文件的命名
+        part.add_header('Content-Disposition', 'attachment', filename=self.filename)
+        message.attach(part)
+        return message
 
 
 #############################################################################
