@@ -36,25 +36,6 @@ def do_crawl_exception(method):
     return lambda crawl_type, crawl_name: f'{crawl_type}-{crawl_name}.{method}异常'
 
 
-def raise_muti_crawl_request_exception(errors: List[Exception]):
-    raise CrawlRequestException(
-        code=CrawlRequestExceptionEnum.MUTI_CRAWL_REQUEST_EXCEPTION.code,
-        msg=CrawlRequestExceptionEnum.MUTI_CRAWL_REQUEST_EXCEPTION.msg,
-        error=errors
-    )
-
-
-def raise_crawl_request_exception(errors: List[Exception]):
-    if not errors:
-        return
-    elif len(errors) >= 2:
-        raise_muti_crawl_request_exception(errors)
-    elif len(errors) == 1:
-        raise errors[0]
-    else:
-        pass
-
-
 class CrawlRequestExceptionEnum(Enum):
     def __init__(self, code, msg):
         self.code = code
@@ -75,6 +56,25 @@ class CrawlRequestExceptionEnum(Enum):
     CRAWL_REQUEST_CONFIG_END_FLAG_EXCEPTION = 13, do_crawl_exception('_config_end_flag')
     CRAWL_REQUEST_DO_SAVE_EXCEPTION = 14, do_crawl_exception('do_save')
     MUTI_CRAWL_REQUEST_EXCEPTION = 15, '捕获多个异常'
+
+
+def raise_muti_crawl_request_exception(errors: List[Exception]):
+    raise CrawlRequestException(
+        code=CrawlRequestExceptionEnum.MUTI_CRAWL_REQUEST_EXCEPTION.code,
+        msg=CrawlRequestExceptionEnum.MUTI_CRAWL_REQUEST_EXCEPTION.msg,
+        error=errors
+    )
+
+
+def raise_crawl_request_exception(errors: List[Exception]):
+    if not errors:
+        return
+    elif len(errors) >= 2:
+        raise_muti_crawl_request_exception(errors)
+    elif len(errors) == 1:
+        raise errors[0]
+    else:
+        pass
 
 
 class AbstractCrawlRequest:
