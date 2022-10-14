@@ -217,7 +217,7 @@ __all__ = ['CrawlConfig']
 
 if __name__ == '__main__':
     """
-    测试 CrawlConfig是线程安全的单例对象(只初始化一次)
+    测试 CrawlConfig是线程安全的单例对象(只初始化一次-__init__方法仅执行一次)
     """
 
 
