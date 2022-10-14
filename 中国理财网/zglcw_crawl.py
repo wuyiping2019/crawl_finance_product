@@ -36,6 +36,7 @@ class ZglcwPCCrawlRequest(ConfigurableCrawlRequest):
         loads = json.loads(resp_str)
         if self.total_page is None:
             self.total_page = math.ceil(int(loads['Count']) / 500)
+
         return self.parse_table(resp_str)
 
     def _config_end_flag(self):
