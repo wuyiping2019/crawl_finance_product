@@ -52,7 +52,9 @@ FIELD_MAPPINGS = {
     '产品说明书': 'cpsms',
     '产品合约': 'cphy',
     '风险揭示书': 'fxjss',
-    '产品收益结构图': 'cpsyjgt'
+    '产品收益结构图': 'cpsyjgt',
+    '起息规则':'qxgz',
+    '递增规则':'dzgz'
 }
 
 

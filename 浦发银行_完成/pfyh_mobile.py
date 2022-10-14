@@ -297,6 +297,7 @@ def process_mobile(conn, cursor, session: Session, log_id: int, **kwargs):
                     rows.append(row)
         if not rows == None:
             for row in rows:
+                print(row)
                 row['logId'] = log_id
                 row['createTime'] = getLocalDate()
                 update_else_insert_to_db(cursor, TARGET_TABLE, row, {'logid': log_id, 'cpbm': row['cpbm']})
@@ -339,7 +340,7 @@ class SpiderFlowImpl(SpiderFlow):
         proxy = None
         # f = open('crawl.txt', 'w')
         try:
-            process_spider(conn, cursor, session, log_id, **kwargs)
+            # process_spider(conn, cursor, session, log_id, **kwargs)
             process_mobile(conn, cursor, session, log_id, **kwargs)
             # process(cursor, session, 874, proxy)
         except Exception as e:

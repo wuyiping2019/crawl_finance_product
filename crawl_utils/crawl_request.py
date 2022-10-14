@@ -374,6 +374,8 @@ class CustomCrawlRequest(AbstractCrawlRequest):
                     error=e
                 )
             logger.info(f"{self.name}-完成响应解析,获取%s条数据" % len(rows))
+            # 删除self.filters中的空RowFilter
+            self.filters = [f for f in self.filters if f]
             logger.info(f"{self.name}-开始使用过滤器链:%s,处理数据" % self.filters)
             try:
                 rows = self._filter_rows(rows)
@@ -662,8 +664,8 @@ class ConfigurableCrawlRequest(CustomCrawlRequest):
     @field_value_mapping.setter
     def field_value_mapping(self, value):
         # 设置该属性会重置过滤器链中第2个过滤器
-        self.filters[1] = RowKVTransformAndFilter(value if value is None else {}).set_name(
-            "FIELD_VALUE_MAPPING:按字典映射配置的字段处理方式处理row中的字段")
+        self.filters[1] = RowKVTransformAndFilter(value).set_name(
+            "FIELD_VALUE_MAPPING:按字典映射配置的字段处理方式处理row中的字段") if value else None
 
     @abstractmethod
     def _pre_crawl(self):
