@@ -5,7 +5,8 @@ from requests import Response
 from crawl_utils.crawl_request import ConfigurableCrawlRequest
 from crawl_utils.db_utils import getLocalDate
 from crawl_utils.mappings import FIELD_MAPPINGS
-from 招商银行_完成.zsyh_config import PC_REQUEST_URL, PC_REQUEST_HEADERS, PC_REQUEST_PARAMS, MASK
+from 招商银行_完成.zsyh_config import PC_REQUEST_URL, PC_REQUEST_HEADERS, PC_REQUEST_PARAMS, MASK, \
+    PC_FIELD_NAME_2_NEW_FIELD_NAME
 
 
 class ZsyhPCCrawlRequest(ConfigurableCrawlRequest):
@@ -23,26 +24,7 @@ class ZsyhPCCrawlRequest(ConfigurableCrawlRequest):
         self.field_value_mapping = {
 
         }
-        self.field_name_2_new_field_name = {
-            'PrdCode': FIELD_MAPPINGS['产品编码'],
-            'PrdName': FIELD_MAPPINGS['产品名称'],
-            'PrdBrief': FIELD_MAPPINGS['产品简称'],
-            'funCod': FIELD_MAPPINGS['产品编码'],
-            'AreaCode': FIELD_MAPPINGS['销售区域'],
-            'Currency': FIELD_MAPPINGS['币种'],
-            'BeginDate': FIELD_MAPPINGS['募集起始日期'],
-            'EndDate': FIELD_MAPPINGS['募集结束日期'],
-            'ShowExpireDate': FIELD_MAPPINGS['产品到期日'],
-            'Status': FIELD_MAPPINGS['产品状态'],
-            'NetValue': FIELD_MAPPINGS['净值'],
-            'Term': FIELD_MAPPINGS['投资期限'],
-            'InitMoney': FIELD_MAPPINGS['起购金额'],
-            'Risk': FIELD_MAPPINGS['风险等级'],
-            'SaleChannelName': FIELD_MAPPINGS['销售渠道'],
-            'ShowExpectedReturn': FIELD_MAPPINGS['业绩比较基准'],
-            'REGCode': FIELD_MAPPINGS['登记编码'],
-            'Style': FIELD_MAPPINGS['投资性质']
-        }
+        self.field_name_2_new_field_name = PC_FIELD_NAME_2_NEW_FIELD_NAME
 
     def _config_params(self):
         if self.page_no is None:

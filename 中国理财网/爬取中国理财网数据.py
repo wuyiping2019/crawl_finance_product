@@ -2,9 +2,9 @@ import datetime
 import json
 import requests
 from pymysql.cursors import Cursor
-from crawl_utils.global_config import LOG_TABLE, init_oracle, DB_ENV
-from crawl_utils.db_utils import createInsertSql, get_conn_oracle, close
-from crawl_utils.mark_log import mark_start_log, mark_success_log, mark_failure_log, get_generated_log_id, get_write_count
+from utils.global_config import LOG_TABLE, init_oracle, DB_ENV
+from utils.db_utils import createInsertSql, get_conn_oracle, close
+from utils.mark_log import mark_start_log, mark_success_log, mark_failure_log, get_generated_log_id, get_write_count
 
 NAME = '中国理财网站'
 ZGLCW_BANK_TABLE = 'ip_zglcw_bank'
